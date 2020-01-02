@@ -532,9 +532,14 @@ final class IterableAPIInternal : NSObject, PushTrackerProtocol {
     
     private var localStorage: LocalStorageProtocol
     
-    private lazy var networkSession: NetworkSessionProtocol = {
-        networkSessionProvider()
-    }()
+//    private lazy var networkSession: NetworkSessionProtocol = {
+//        networkSessionProvider()
+//    }()
+
+    // Use separate session for each task
+    private var networkSession: NetworkSessionProtocol {
+      return networkSessionProvider()
+    }
     
     private var urlOpener: UrlOpenerProtocol
     
