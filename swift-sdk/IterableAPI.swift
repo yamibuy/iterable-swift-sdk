@@ -12,7 +12,7 @@ import Foundation
 @objcMembers
 public final class IterableAPI : NSObject {
     // Current SDK Version.
-    static let sdkVersion = "6.1.3"
+    static let sdkVersion = "6.1.5"
     
     // MARK: Initialization
     /// You should call this method and not call the init method directly.
@@ -353,8 +353,19 @@ public final class IterableAPI : NSObject {
      
      - remark: passing in an empty array will clear subscription list, passing in nil will not modify the list
      */
-    @objc(updateSubscriptions:unsubscribedChannelIds:unsubscribedMessageTypeIds:) public static func updateSubscriptions(_ emailListIds: [String]?, unsubscribedChannelIds: [String]?, unsubscribedMessageTypeIds: [String]?) {
-        internalImplementation?.updateSubscriptions(emailListIds, unsubscribedChannelIds: unsubscribedChannelIds, unsubscribedMessageTypeIds: unsubscribedMessageTypeIds)
+    @objc(updateSubscriptions:unsubscribedChannelIds:unsubscribedMessageTypeIds:subscribedMessageTypeIds:campaignIds:templateId:)
+    public static func updateSubscriptions(_ emailListIds: [NSNumber]?,
+                                           unsubscribedChannelIds: [NSNumber]?,
+                                           unsubscribedMessageTypeIds: [NSNumber]?,
+                                           subscribedMessageTypeIds: [NSNumber]?,
+                                           campaignId: NSNumber?,
+                                           templateId: NSNumber?) {
+        internalImplementation?.updateSubscriptions(emailListIds,
+                                                    unsubscribedChannelIds: unsubscribedChannelIds,
+                                                    unsubscribedMessageTypeIds: unsubscribedMessageTypeIds,
+                                                    subscribedMessageTypeIds: subscribedMessageTypeIds,
+                                                    campaignId: campaignId,
+                                                    templateId: templateId)
     }
     
     //MARK: In-App Notifications
