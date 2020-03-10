@@ -271,6 +271,13 @@ class InAppManager: NSObject, IterableInternalInAppManagerProtocol {
     
     private func processAndShowMessage(messagesMap: OrderedDictionary<String, IterableInAppMessage>) {
         var processor = MessagesProcessor(inAppDelegate: inAppDelegate, inAppDisplayChecker: self, messagesMap: messagesMap)
+      
+        processor.messageSkippedHandler = { [weak self] message in
+          if !message.isYamiLiveMessage{ // 直播消息不做consume 为了保证不拉取旧的直播消息
+           self?.apiClient?.inAppConsume(messageId: message.messageId)
+          }
+        }
+
         let messagesProcessorResult = processor.processMessages()
         self.messagesMap = getMessagesMap(fromMessagesProcessorResult: messagesProcessorResult)
         
@@ -596,4 +603,16 @@ extension InAppManager: InAppNotifiable {
         
         return result
     }
+}
+
+extension IterableInAppMessage{
+  // 是否直播消息
+  var isYamiLiveMessage:Bool{
+    if let info = customPayload as? [String: Any] {
+       if let k = info["kind"] as? String, k == "live" {
+         return true
+       }
+    }
+    return false
+  }
 }

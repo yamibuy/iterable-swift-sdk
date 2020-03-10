@@ -30,6 +30,7 @@ struct MessagesProcessor {
             return .show(message: message, messagesMap: messagesMap)
         case let .skip(message):
             updateMessage(message, didProcessTrigger: true)
+            messageSkippedHandler(message)
             return processMessages()
         case .none, .wait:
             return .noShow(messagesMap: messagesMap)
@@ -96,6 +97,9 @@ struct MessagesProcessor {
     private let inAppDelegate: IterableInAppDelegate
     private let inAppDisplayChecker: InAppDisplayChecker
     private var messagesMap: OrderedDictionary<String, IterableInAppMessage>
+    
+    // message skip callback
+    var messageSkippedHandler:(IterableInAppMessage)->() = {_ in}
 }
 
 struct MergeMessagesResult {
