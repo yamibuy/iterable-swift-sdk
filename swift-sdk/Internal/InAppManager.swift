@@ -239,6 +239,8 @@ class InAppManager: NSObject, IterableInternalInAppManagerProtocol {
         
         return true
     }
+  
+    
     
     private func finishSync(inboxChanged: Bool) {
         ITBInfo()
@@ -324,8 +326,9 @@ class InAppManager: NSObject, IterableInternalInAppManagerProtocol {
         }
     }
     
+
     // This method schedules next triggered message after showing a message
-    private func scheduleNextInAppMessage() {
+    func scheduleNextInAppMessage() {
         ITBDebug()
         
         let waitTimeInterval = getInAppShowingWaitTimeInterval()

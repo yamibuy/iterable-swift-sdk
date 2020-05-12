@@ -57,8 +57,13 @@ struct MessagesProcessor {
         if inAppDisplayChecker.isOkToShowNow(message: message) {
             ITBDebug("isOkToShowNow")
             if inAppDelegate.onNew(message: message) == .show {
+              
+              if inAppDelegate.messageCanShowNow(){
                 ITBDebug("delegete returned show")
                 return .show(message)
+              }else{
+                return .wait
+              }
             } else {
                 ITBDebug("delegate returned skip")
                 return .skip(message)

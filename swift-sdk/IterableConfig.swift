@@ -42,6 +42,11 @@ import Foundation
      * - returns: Return `show` to show the in-app or `skip` to skip this.
      */
     @objc(onNewMessage:) func onNew(message: IterableInAppMessage) -> InAppShowResponse
+  
+    /// 此刻消息是否可以展示
+    func messageCanShowNow() ->Bool
+  
+    
 }
 
 /**

@@ -640,3 +640,10 @@ import UIKit
     static var internalImplementation: IterableAPIInternal?
     private override init() { super.init() }
 }
+
+public extension IterableAPI{
+  /// 可以正常展示消息了
+  static func messageCanBeShownNow(){
+    (internalImplementation?.inAppManager as? InAppManager)?.scheduleNextInAppMessage()
+  }
+}
