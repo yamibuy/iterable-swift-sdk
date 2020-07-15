@@ -15,24 +15,24 @@ import UIKit
     
     /// You should call this method and not call the init method directly.
     /// - parameter apiKey: Iterable API Key.
-    public static func initialize(apiKey: String) {
-        initialize(apiKey: apiKey, launchOptions: nil)
+    public static func initialize(apiKey: String,inAppMessageFetchDelaySeconds:Int) {
+        initialize(apiKey: apiKey, launchOptions: nil,inAppMessageFetchDelaySeconds:inAppMessageFetchDelaySeconds)
     }
     
     /// You should call this method and not call the init method directly.
     /// - parameter apiKey: Iterable API Key.
     /// - parameter config: Iterable config object.
     public static func initialize(apiKey: String,
-                                  config: IterableConfig) {
-        initialize(apiKey: apiKey, launchOptions: nil, config: config)
+                                  config: IterableConfig,inAppMessageFetchDelaySeconds:Int) {
+       initialize(apiKey: apiKey, launchOptions: nil, config: config,inAppMessageFetchDelaySeconds:inAppMessageFetchDelaySeconds)
     }
     
     /// You should call this method and not call the init method directly.
     /// - parameter apiKey: Iterable API Key.
     /// - parameter launchOptions: The launchOptions coming from application:didLaunching:withOptions
     public static func initialize(apiKey: String,
-                                  launchOptions: [UIApplication.LaunchOptionsKey: Any]?) {
-        initialize(apiKey: apiKey, launchOptions: launchOptions, config: IterableConfig())
+                                  launchOptions: [UIApplication.LaunchOptionsKey: Any]?,inAppMessageFetchDelaySeconds:Int) {
+       initialize(apiKey: apiKey, launchOptions: launchOptions, config: IterableConfig(),inAppMessageFetchDelaySeconds:inAppMessageFetchDelaySeconds)
     }
     
     /// The big daddy of initialization. You should call this method and not call the init method directly.
@@ -41,9 +41,11 @@ import UIKit
     /// - parameter config: Iterable config object.
     public static func initialize(apiKey: String,
                                   launchOptions: [UIApplication.LaunchOptionsKey: Any]?,
-                                  config: IterableConfig = IterableConfig()) {
+                                  config: IterableConfig = IterableConfig(),
+                                  inAppMessageFetchDelaySeconds:Int) {
+      
         internalImplementation = IterableAPIInternal(apiKey: apiKey, launchOptions: launchOptions, config: config)
-        _ = internalImplementation?.start()
+        _ = internalImplementation?.start(inAppMessageFetchDelaySeconds:inAppMessageFetchDelaySeconds)
     }
     
     /**

@@ -519,7 +519,7 @@ final class IterableAPIInternal: NSObject, PushTrackerProtocol, AuthProvider {
         deepLinkManager = IterableDeepLinkManager()
     }
     
-    func start() -> Future<Bool, Error> {
+     func start(inAppMessageFetchDelaySeconds:Int) -> Future<Bool, Error> {
         ITBInfo()
         // sdk version
         updateSDKVersion()
@@ -541,8 +541,11 @@ final class IterableAPIInternal: NSObject, PushTrackerProtocol, AuthProvider {
                                                                                inAppNotifiable: inAppManager)
         
         handle(launchOptions: launchOptions)
-        
-        return inAppManager.start()
+        let dispatchAfter = DispatchTimeInterval.seconds(inAppMessageFetchDelaySeconds)
+        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + dispatchAfter) {[weak self]in
+          _ = self?.inAppManager.start()
+        }
+        return Promise<Bool, Error>(value: true)
     }
     
     private func handle(launchOptions: [UIApplication.LaunchOptionsKey: Any]?) {
