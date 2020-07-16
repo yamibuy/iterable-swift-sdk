@@ -15,7 +15,7 @@ import Foundation
      * - parameter context:  Metadata containing the original action and the source: push or universal link.
      * - returns: Boolean value. Return true if the URL was handled to override default behavior.
      */
-    @objc(handleIterableURL:context:) func handle(iterableURL url: URL, inContext context: IterableActionContext) -> Bool
+     @objc(handleIterableURL:context:fromNotification:) func handle(iterableURL url: URL, inContext context: IterableActionContext,fromNotification:Bool) -> Bool
 }
 
 /**

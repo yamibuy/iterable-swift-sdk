@@ -46,7 +46,7 @@ class IterableDeepLinkManager: NSObject {
                     let context = IterableActionContext(action: action, source: .universalLink)
                     IterableActionRunner.execute(action: action,
                                                  context: context,
-                                                 urlHandler: IterableUtil.urlHandler(fromUrlDelegate: urlDelegate, inContext: context),
+                                                 urlHandler: IterableUtil.urlHandler(fromUrlDelegate: urlDelegate, inContext: context,fromNotification: false),
                                                  urlOpener: urlOpener)
                 }
             }
@@ -57,7 +57,7 @@ class IterableDeepLinkManager: NSObject {
                 let context = IterableActionContext(action: action, source: .universalLink)
                 return IterableActionRunner.execute(action: action,
                                                     context: context,
-                                                    urlHandler: IterableUtil.urlHandler(fromUrlDelegate: urlDelegate, inContext: context),
+                                                    urlHandler: IterableUtil.urlHandler(fromUrlDelegate: urlDelegate, inContext: context,fromNotification: false),
                                                     urlOpener: urlOpener)
             } else {
                 return false

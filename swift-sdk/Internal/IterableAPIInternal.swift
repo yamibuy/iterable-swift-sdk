@@ -609,7 +609,7 @@ final class IterableAPIInternal: NSObject, PushTrackerProtocol, AuthProvider {
         DispatchQueue.main.async {
             IterableActionRunner.execute(action: action,
                                          context: context,
-                                         urlHandler: IterableUtil.urlHandler(fromUrlDelegate: self.config.urlDelegate, inContext: context),
+                                         urlHandler: IterableUtil.urlHandler(fromUrlDelegate: self.config.urlDelegate, inContext: context,fromNotification: false),
                                          urlOpener: self.urlOpener)
         }
     }

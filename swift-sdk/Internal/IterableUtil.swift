@@ -68,9 +68,9 @@ enum IterableResult<T, E> {
     // MARK: Helper Utility Functions
     
     // converts from IterableURLDelegate to UrlHandler
-    static func urlHandler(fromUrlDelegate urlDelegate: IterableURLDelegate?, inContext context: IterableActionContext) -> UrlHandler {
+    static func urlHandler(fromUrlDelegate urlDelegate: IterableURLDelegate?, inContext context: IterableActionContext,fromNotification:Bool) -> UrlHandler {
         return { url in
-            urlDelegate?.handle(iterableURL: url, inContext: context) == true
+            urlDelegate?.handle(iterableURL: url, inContext: context,fromNotification:fromNotification) == true
         }
     }
     
