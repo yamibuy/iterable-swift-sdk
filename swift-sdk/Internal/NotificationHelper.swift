@@ -110,7 +110,18 @@ struct ITBLSilentPushNotificationInfo {
     }
 }
 
-struct NotificationHelper {
+public struct NotificationHelper {
+  
+    public static func isSlientPush(notification: [AnyHashable: Any]) -> Bool{
+      guard let itblElement = notification[Keys.itbl.rawValue] as? [AnyHashable: Any], let isGhostPush = itblElement[Keys.isGhostPush.rawValue] as? Bool else {
+          return false
+      }
+      if isGhostPush  {
+        return true
+      }
+      return false
+    }
+
     static func inspect(notification: [AnyHashable: Any]) -> NotificationInfo {
         guard let itblElement = notification[Keys.itbl.rawValue] as? [AnyHashable: Any], let isGhostPush = itblElement[Keys.isGhostPush.rawValue] as? Bool else {
             return .other
