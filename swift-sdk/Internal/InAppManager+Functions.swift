@@ -21,20 +21,22 @@ struct MessagesProcessor {
         self.messagesMap = messagesMap
     }
     
-    mutating func processMessages() -> MessagesProcessorResult {
+    mutating func processMessages(currentMessage:IterableInAppMessage? = nil) -> MessagesProcessorResult {
         ITBDebug()
         
-        switch processNextMessage() {
-        case let .show(message):
-            updateMessage(message, didProcessTrigger: true, consumed: !message.saveToInbox)
-            return .show(message: message, messagesMap: messagesMap)
-        case let .skip(message):
-            updateMessage(message, didProcessTrigger: true)
-            messageSkippedHandler(message)
-            return processMessages()
-        case .none, .wait:
-            return .noShow(messagesMap: messagesMap)
-        }
+      switch processNextMessage(currentMessage:currentMessage) {
+          case let .show(message):
+              updateMessage(message, didProcessTrigger: true, consumed: !message.saveToInbox)
+              return .show(message: message, messagesMap: messagesMap)
+          case let .skip(message):
+              updateMessage(message, didProcessTrigger: true)
+              messageSkippedHandler(message)
+              return processMessages()
+          case .none, .wait:
+              return .noShow(messagesMap: messagesMap)
+      case .next(let message):
+                      return processMessages(currentMessage:message)
+          }
     }
     
     private enum ProcessNextMessageResult {
@@ -42,12 +44,14 @@ struct MessagesProcessor {
         case skip(IterableInAppMessage)
         case none
         case wait
+        case next(IterableInAppMessage) // 当前消息不展示 找下一条
+
     }
     
-    private func processNextMessage() -> ProcessNextMessageResult {
+   private func processNextMessage(currentMessage:IterableInAppMessage? = nil) -> ProcessNextMessageResult {
         ITBDebug()
         
-        guard let message = getFirstProcessableTriggeredMessage() else {
+        guard let message = getFirstProcessableTriggeredMessage(currentMessage:currentMessage) else {
             ITBDebug("No message to process, totalMessages: \(messagesMap.values.count)") //ttt
             return .none
         }
@@ -55,28 +59,32 @@ struct MessagesProcessor {
         ITBDebug("processing message with id: \(message.messageId)")
         
         if inAppDisplayChecker.isOkToShowNow(message: message) {
-            ITBDebug("isOkToShowNow")
-            if inAppDelegate.onNew(message: message) == .show {
-              
-              if inAppDelegate.messageCanShowNow(){
-                ITBDebug("delegete returned show")
-                return .show(message)
-              }else{
-                return .wait
-              }
-            } else {
-                ITBDebug("delegate returned skip")
-                return .skip(message)
-            }
+          ITBDebug("isOkToShowNow")
+          let t = inAppDelegate.onNew(message: message)
+          if t == .show {
+            ITBDebug("delegete returned show")
+            return .show(message)
+          } else if t == .next{
+            return .next(message)
+          }else {
+            ITBDebug("delegate returned skip")
+            return .skip(message)
+          }
         } else {
-            ITBDebug("Not ok to show now")
-            
-            return .wait
+          ITBDebug("Not ok to show now")
+          return .wait
         }
     }
     
-    private func getFirstProcessableTriggeredMessage() -> IterableInAppMessage? {
-        return messagesMap.values.filter(MessagesProcessor.isProcessableTriggeredMessage).first
+    private func getFirstProcessableTriggeredMessage(currentMessage:IterableInAppMessage? = nil) -> IterableInAppMessage? {
+      
+      if let currentMessage = currentMessage{
+        if let index = messagesMap.values.firstIndex(of: currentMessage){
+          return messagesMap.values.dropFirst(index + 1).filter(MessagesProcessor.isProcessableTriggeredMessage).first
+        }
+      }
+      
+      return messagesMap.values.filter(MessagesProcessor.isProcessableTriggeredMessage).first
     }
     
     private static func isProcessableTriggeredMessage(_ message: IterableInAppMessage) -> Bool {

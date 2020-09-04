@@ -99,7 +99,9 @@ struct InAppMessageParser {
         
         if let theCampaignId = json[JsonKey.campaignId.jsonKey] as? String {
             campaignId = theCampaignId
-        } else {
+        }else if let theCampaignId = json[JsonKey.campaignId.jsonKey] as? Int {
+            campaignId = "\(theCampaignId)"
+        }else {
             ITBDebug("Could not find campaignId") // This is debug level because this happens a lot with proof in-apps
             campaignId = ""
         }

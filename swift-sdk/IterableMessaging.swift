@@ -12,6 +12,7 @@ import UIKit
 @objc public enum InAppShowResponse: Int {
     case show
     case skip
+    case next
 }
 
 @objc public protocol IterableInAppManagerProtocol {

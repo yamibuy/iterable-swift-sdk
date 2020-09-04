@@ -51,9 +51,9 @@ class InAppFetcher: InAppFetcherProtocol {
     }
     
     // how many messages to fetch
-//    private let numMessages = 100
+    private let numMessages = 10
   
-    private let numMessages = 1 // only 1 , newest
+//    private let numMessages = 1 // only 1 , newest
 
   
 }

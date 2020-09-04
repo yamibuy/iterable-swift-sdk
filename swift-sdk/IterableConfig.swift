@@ -31,6 +31,20 @@ import Foundation
     @objc(handleIterableCustomAction:context:) func handle(iterableCustomAction action: IterableAction, inContext context: IterableActionContext) -> Bool
 }
 
+public enum InAppWebViewEvent{
+  case displayed(IterableInAppMessage)
+  case linkTappedAndFinishShow(String,IterableInAppMessage)
+}
+
+
+/**
+ * in-App webview ui delegate
+ */
+public protocol IterableInAppWebViewDelegate: AnyObject {
+   
+   func eventCallBack(event :InAppWebViewEvent)
+}
+
 /**
  * This protocol allows you to override default behavior when new in-app messages arrive.
  */
@@ -44,7 +58,7 @@ import Foundation
     @objc(onNewMessage:) func onNew(message: IterableInAppMessage) -> InAppShowResponse
   
     /// 此刻消息是否可以展示
-    func messageCanShowNow() ->Bool
+//    func messageCanShowNow() ->Bool
   
     
 }
@@ -136,7 +150,9 @@ import Foundation
     public var inAppDelegate: IterableInAppDelegate = DefaultInAppDelegate()
     
     /// How many seconds to wait before showing the next in-app, if there are more than one present
-    public var inAppDisplayInterval: Double = 30.0
+//    public var inAppDisplayInterval: Double = 30.0
+    public var inAppDisplayInterval: Double = 5.0
+
     
     /// These are internal. Do not change
     internal var apiEndpoint = Endpoint.api

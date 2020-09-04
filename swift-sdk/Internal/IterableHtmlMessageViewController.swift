@@ -108,6 +108,7 @@ class IterableHtmlMessageViewController: UIViewController {
             return
         }
         resizeWebView(webView)
+        
     }
     
     open override func viewWillDisappear(_ animated: Bool) {
@@ -130,6 +131,7 @@ class IterableHtmlMessageViewController: UIViewController {
                                                                 source: InAppCloseSource.back,
                                                                 clickedUrl: clickedLink)
         }
+      
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -220,6 +222,9 @@ extension IterableHtmlMessageViewController: WKNavigationDelegate {
         if let myWebview = self.webView {
             resizeWebView(myWebview)
         }
+        if let message = self.parameters.messageMetadata?.message{
+            IterableAPI.internalImplementation?.inAppWebviewUIDelegate?.eventCallBack(event: .displayed(message))
+        }
     }
     
     fileprivate func trackInAppClick(destinationUrl: String) {
@@ -256,12 +261,17 @@ extension IterableHtmlMessageViewController: WKNavigationDelegate {
             dismiss(animated: true) { [weak self, destinationUrl] in
                 self?.futureClickedURL.resolve(with: url)
                 self?.trackInAppClick(destinationUrl: destinationUrl)
+                if let message = self?.parameters.messageMetadata?.message{
+                  IterableAPI.internalImplementation?.inAppWebviewUIDelegate?.eventCallBack(event: .linkTappedAndFinishShow(destinationUrl, message))
+                }
             }
         } else {
             futureClickedURL.resolve(with: url)
             trackInAppClick(destinationUrl: destinationUrl)
-            
             navigationController?.popViewController(animated: true)
+            if let message = self.parameters.messageMetadata?.message{
+              IterableAPI.internalImplementation?.inAppWebviewUIDelegate?.eventCallBack(event: .linkTappedAndFinishShow(destinationUrl, message))
+            }
         }
         
         decisionHandler(.cancel)

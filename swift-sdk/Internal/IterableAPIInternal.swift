@@ -92,6 +92,8 @@ final class IterableAPIInternal: NSObject, PushTrackerProtocol, AuthProvider {
         self.dependencyContainer.createInAppManager(config: self.config, apiClient: self.apiClient, deviceMetadata: deviceMetadata)
     }()
     
+    var inAppWebviewUIDelegate:IterableInAppWebViewDelegate?
+  
     func register(token: Data,
                   onSuccess: OnSuccessHandler? = IterableAPIInternal.defaultOnSuccess(identifier: "registerToken"),
                   onFailure: OnFailureHandler? = IterableAPIInternal.defaultOnFailure(identifier: "registerToken")) {

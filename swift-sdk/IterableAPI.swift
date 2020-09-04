@@ -636,6 +636,11 @@ import UIKit
         
         return internalImplementation.inAppManager
     }
+  
+    //MARK: InAppWebviewUIDelegate
+    static public func setInAppWebviewUIDelegate(_ delegte:IterableInAppWebViewDelegate){
+      internalImplementation?.inAppWebviewUIDelegate = delegte
+    }
     
     // MARK: Private and Internal
     
@@ -643,9 +648,10 @@ import UIKit
     private override init() { super.init() }
 }
 
+
 public extension IterableAPI{
   /// 可以正常展示消息了
   static func messageCanBeShownNow(){
-    (internalImplementation?.inAppManager as? InAppManager)?.scheduleNextInAppMessage()
+    (internalImplementation?.inAppManager as? InAppManager)?.scheduleNextInAppMessage(checkTimeInterval: false)
   }
 }

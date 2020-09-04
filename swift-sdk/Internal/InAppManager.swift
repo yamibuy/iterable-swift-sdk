@@ -223,8 +223,8 @@ class InAppManager: NSObject, IterableInternalInAppManagerProtocol {
     
     // messages are new messages coming from the server
     private func mergeMessages(_ messages: [IterableInAppMessage]) -> MergeMessagesResult {
+     
         var messagesObtainedHandler = MessagesObtainedHandler(messagesMap: messagesMap, messages: messages)
-        
         return messagesObtainedHandler.handle()
     }
     
@@ -328,24 +328,32 @@ class InAppManager: NSObject, IterableInternalInAppManagerProtocol {
     
 
     // This method schedules next triggered message after showing a message
-    func scheduleNextInAppMessage() {
-        ITBDebug()
-        
+    func scheduleNextInAppMessage(checkTimeInterval:Bool = true) {
+      ITBDebug()
+      if checkTimeInterval{
         let waitTimeInterval = getInAppShowingWaitTimeInterval()
         
         if waitTimeInterval > 0 {
-            ITBDebug("Need to wait for: \(waitTimeInterval)")
-            scheduleQueue.asyncAfter(deadline: .now() + waitTimeInterval) {
-                self.scheduleNextInAppMessage()
-            }
+          ITBDebug("Need to wait for: \(waitTimeInterval)")
+          scheduleQueue.asyncAfter(deadline: .now() + waitTimeInterval) {
+            self.scheduleNextInAppMessage()
+          }
         } else {
-            _ = InAppManager.getAppIsActive(applicationStateProvider: applicationStateProvider).map { appIsActive in
-                if appIsActive {
-                    self.processAndShowMessage(messagesMap: self.messagesMap)
-                    self.persister.persist(self.messagesMap.values)
-                }
+          _ = InAppManager.getAppIsActive(applicationStateProvider: applicationStateProvider).map { appIsActive in
+            if appIsActive {
+              self.processAndShowMessage(messagesMap: self.messagesMap)
+              self.persister.persist(self.messagesMap.values)
             }
+          }
         }
+      }else{
+        _ = InAppManager.getAppIsActive(applicationStateProvider: applicationStateProvider).map { appIsActive in
+          if appIsActive {
+            self.processAndShowMessage(messagesMap: self.messagesMap)
+            self.persister.persist(self.messagesMap.values)
+          }
+        }
+      }
     }
     
     @discardableResult private func updateMessage(_ message: IterableInAppMessage,
