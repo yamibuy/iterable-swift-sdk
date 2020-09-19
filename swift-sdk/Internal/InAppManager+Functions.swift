@@ -80,11 +80,21 @@ struct MessagesProcessor {
       
       if let currentMessage = currentMessage{
         if let index = messagesMap.values.firstIndex(of: currentMessage){
-          return messagesMap.values.dropFirst(index + 1).filter(MessagesProcessor.isProcessableTriggeredMessage).first
+          return messagesMap.values.dropFirst(index + 1).filter({ message in
+            if let d = message.expiresAt{
+              return d > Date()
+            }
+            return true
+          }).filter(MessagesProcessor.isProcessableTriggeredMessage).first
         }
       }
       
-      return messagesMap.values.filter(MessagesProcessor.isProcessableTriggeredMessage).first
+      return messagesMap.values.filter({ message in
+        if let d = message.expiresAt{
+          return d > Date()
+        }
+        return true
+      }).filter(MessagesProcessor.isProcessableTriggeredMessage).first
     }
     
     private static func isProcessableTriggeredMessage(_ message: IterableInAppMessage) -> Bool {

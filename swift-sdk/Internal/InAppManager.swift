@@ -476,7 +476,12 @@ class InAppManager: NSObject, IterableInternalInAppManagerProtocol {
     }
     
     private func initializeMessagesMap() {
-        let messages = persister.getMessages()
+        let messages = persister.getMessages().filter({ message in
+          if let d =  message.expiresAt{
+            return d > Date()
+          }
+          return true
+        })
         
         for message in messages {
             messagesMap[message.messageId] = message
