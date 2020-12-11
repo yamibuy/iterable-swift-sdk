@@ -214,11 +214,27 @@ class InAppManager: NSObject, IterableInternalInAppManagerProtocol {
     }
     
     private func synchronize(appIsActive: Bool) -> Future<Bool, Error> {
-        ITBInfo()
-        
-        return fetcher.fetch()
-            .map { self.mergeMessages($0) }
-            .map { self.processMergedMessages(appIsActive: appIsActive, mergeMessagesResult: $0) }
+      ITBInfo()
+      // 将直播消息放于数组最前
+      func sort(messages:[IterableInAppMessage])->[IterableInAppMessage]{
+        return messages.sorted { (m1, m2) -> Bool in
+          if m1.isYamiLiveMessage,!m2.isYamiLiveMessage{
+            return true
+          }else if m1.isYamiLiveMessage,m2.isYamiLiveMessage{
+            if let d1 = m1.createdAt ,let d2 = m1.createdAt{
+              return d1 > d2
+            }
+            return m1.campaignId > m2.campaignId
+          }else{
+            return false
+          }
+        }
+      }
+      
+      return fetcher.fetch().map
+        { self.mergeMessages(sort(messages: $0))
+        }.map { self.processMergedMessages(appIsActive: appIsActive, mergeMessagesResult: $0) }
+
     }
     
     // messages are new messages coming from the server
@@ -275,9 +291,7 @@ class InAppManager: NSObject, IterableInternalInAppManagerProtocol {
         var processor = MessagesProcessor(inAppDelegate: inAppDelegate, inAppDisplayChecker: self, messagesMap: messagesMap)
       
         processor.messageSkippedHandler = { [weak self] message in
-          if !message.isYamiLiveMessage{ // 直播消息不做consume 为了保证不拉取旧的直播消息
            self?.apiClient?.inAppConsume(messageId: message.messageId)
-          }
         }
 
         let messagesProcessorResult = processor.processMessages()
