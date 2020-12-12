@@ -220,13 +220,15 @@ class InAppManager: NSObject, IterableInternalInAppManagerProtocol {
         return messages.sorted { (m1, m2) -> Bool in
           if m1.isYamiLiveMessage,!m2.isYamiLiveMessage{
             return true
+          }else if !m1.isYamiLiveMessage,m2.isYamiLiveMessage{
+            return false
           }else if m1.isYamiLiveMessage,m2.isYamiLiveMessage{
             if let d1 = m1.createdAt ,let d2 = m1.createdAt{
               return d1 > d2
             }
             return m1.campaignId > m2.campaignId
           }else{
-            return false
+            return true
           }
         }
       }
