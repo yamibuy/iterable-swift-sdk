@@ -52,6 +52,10 @@ public struct OrderedDictionary<K: Hashable, V> {
     }
     
     private var dict = [K: V]()
+     
+    mutating func sortKeys(_ sort: ([K]) -> [K]){
+      keys = sort(self.keys)
+    }
 }
 
 extension OrderedDictionary: Sequence {

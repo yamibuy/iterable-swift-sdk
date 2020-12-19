@@ -145,6 +145,32 @@ struct MessagesObtainedHandler {
         // add new ones
         let addedInboxCount = addNewMessages(messagesFromServer: messages)
         
+      
+        // 将直播消息放于数组最前
+        var temp = messagesMap
+        temp.sortKeys { keys  in
+          
+          return keys.sorted { (k1, k2)  in
+            guard let m1 = messagesMap[k1], let m2 = messagesMap[k2] else{
+              return true
+            }
+            
+            if m1.isYamiLiveMessage,!m2.isYamiLiveMessage{
+              return true
+            }else if !m1.isYamiLiveMessage,m2.isYamiLiveMessage{
+              return false
+            }else if m1.isYamiLiveMessage,m2.isYamiLiveMessage{
+              if let d1 = m1.createdAt ,let d2 = m1.createdAt{
+                return d1 > d2
+              }
+              return m1.campaignId > m2.campaignId
+            }else{
+              return true
+            }
+          }
+        }
+        messagesMap = temp
+      
         return MergeMessagesResult(inboxChanged: deletedInboxCount + addedInboxCount > 0,
                                    messagesMap: messagesMap)
     }

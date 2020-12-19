@@ -215,35 +215,17 @@ class InAppManager: NSObject, IterableInternalInAppManagerProtocol {
     
     private func synchronize(appIsActive: Bool) -> Future<Bool, Error> {
       ITBInfo()
-      // 将直播消息放于数组最前
-      func sort(messages:[IterableInAppMessage])->[IterableInAppMessage]{
-        return messages.sorted { (m1, m2) -> Bool in
-          if m1.isYamiLiveMessage,!m2.isYamiLiveMessage{
-            return true
-          }else if !m1.isYamiLiveMessage,m2.isYamiLiveMessage{
-            return false
-          }else if m1.isYamiLiveMessage,m2.isYamiLiveMessage{
-            if let d1 = m1.createdAt ,let d2 = m1.createdAt{
-              return d1 > d2
-            }
-            return m1.campaignId > m2.campaignId
-          }else{
-            return true
-          }
-        }
-      }
+     
       
-      return fetcher.fetch().map
-        { self.mergeMessages(sort(messages: $0))
-        }.map { self.processMergedMessages(appIsActive: appIsActive, mergeMessagesResult: $0) }
+      return fetcher.fetch().map{ self.mergeMessages($0)}.map { self.processMergedMessages(appIsActive: appIsActive, mergeMessagesResult: $0) }
 
     }
     
     // messages are new messages coming from the server
     private func mergeMessages(_ messages: [IterableInAppMessage]) -> MergeMessagesResult {
      
-        var messagesObtainedHandler = MessagesObtainedHandler(messagesMap: messagesMap, messages: messages)
-        return messagesObtainedHandler.handle()
+       var messagesObtainedHandler = MessagesObtainedHandler(messagesMap: messagesMap, messages: messages)
+       return messagesObtainedHandler.handle()
     }
     
     private func processMergedMessages(appIsActive: Bool, mergeMessagesResult: MergeMessagesResult) -> Bool {
