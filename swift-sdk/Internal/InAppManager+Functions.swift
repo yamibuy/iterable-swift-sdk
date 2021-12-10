@@ -1,5 +1,4 @@
 //
-//  Created by Tapash Majumder on 5/30/19.
 //  Copyright © 2019 Iterable. All rights reserved.
 //
 
@@ -47,34 +46,37 @@ struct MessagesProcessor {
         ITBDebug()
         
         guard let message = getFirstProcessableTriggeredMessage() else {
-            ITBDebug("No message to process, totalMessages: \(messagesMap.values.count)") //ttt
+            ITBDebug("No message to process, totalMessages: \(messagesMap.values.count)") // ttt
             return .none
         }
         
         ITBDebug("processing message with id: \(message.messageId)")
         
-        if inAppDisplayChecker.isOkToShowNow(message: message) {
-            ITBDebug("isOkToShowNow")
-            if inAppDelegate.onNew(message: message) == .show {
-                ITBDebug("delegete returned show")
-                return .show(message)
-            } else {
-                ITBDebug("delegate returned skip")
-                return .skip(message)
-            }
-        } else {
+        guard inAppDisplayChecker.isOkToShowNow(message: message) else {
             ITBDebug("Not ok to show now")
-            
             return .wait
+        }
+        
+        ITBDebug("isOkToShowNow")
+        
+        if inAppDelegate.onNew(message: message) == .show {
+            ITBDebug("delegate returned show")
+            return .show(message)
+        } else {
+            ITBDebug("delegate returned skip")
+            return .skip(message)
         }
     }
     
     private func getFirstProcessableTriggeredMessage() -> IterableInAppMessage? {
-        return messagesMap.values.filter(MessagesProcessor.isProcessableTriggeredMessage).first
+        messagesMap.values
+            .filter(MessagesProcessor.isProcessableTriggeredMessage)
+            .sorted { $0.priorityLevel < $1.priorityLevel }
+            .first
     }
     
     private static func isProcessableTriggeredMessage(_ message: IterableInAppMessage) -> Bool {
-        return message.didProcessTrigger == false && message.trigger.type == .immediate
+        !message.didProcessTrigger && message.trigger.type == .immediate && !message.read
     }
     
     private mutating func updateMessage(_ message: IterableInAppMessage, didProcessTrigger: Bool? = nil, consumed: Bool? = nil) {
@@ -101,6 +103,7 @@ struct MessagesProcessor {
 struct MergeMessagesResult {
     let inboxChanged: Bool
     let messagesMap: OrderedDictionary<String, IterableInAppMessage>
+    let deliveredMessages: [IterableInAppMessage]
 }
 
 /// Merges the results and determines whether inbox changed needs to be fired.
@@ -111,60 +114,44 @@ struct MessagesObtainedHandler {
         self.messages = messages
     }
     
-    mutating func handle() -> MergeMessagesResult {
-        // Remove messages that are no present in server
-        let deletedInboxCount = removeDeletedMessages(messagesFromServer: messages)
+    func handle() -> MergeMessagesResult {
+        let removedMessages = messagesMap.values.filter { existingMessage in !messages.contains(where: { $0.messageId == existingMessage.messageId }) }
         
-        // add new ones
-        let addedInboxCount = addNewMessages(messagesFromServer: messages)
+        let addedMessages = messages.filter { !messagesMap.keys.contains($0.messageId) }
         
-        return MergeMessagesResult(inboxChanged: deletedInboxCount + addedInboxCount > 0,
-                                   messagesMap: messagesMap)
-    }
-    
-    // return count of deleted inbox messages
-    private mutating func removeDeletedMessages(messagesFromServer messages: [IterableInAppMessage]) -> Int {
-        var inboxCount = 0
-        let removedMessages = getRemovedMessages(messagesFromServer: messages)
+        let removedInboxCount = removedMessages.reduce(0) { $1.saveToInbox ? $0 + 1 : $0 }
+        let addedInboxCount = addedMessages.reduce(0) { $1.saveToInbox ? $0 + 1 : $0 }
         
-        removedMessages.forEach {
-            if $0.saveToInbox == true {
-                inboxCount += 1
-            }
-            
-            messagesMap.removeValue(forKey: $0.messageId)
-        }
-        
-        return inboxCount
-    }
-    
-    // given `messages` coming for server, find messages that need to be removed
-    private func getRemovedMessages(messagesFromServer messages: [IterableInAppMessage]) -> [IterableInAppMessage] {
-        return messagesMap.values.reduce(into: [IterableInAppMessage]()) { result, message in
-            if !messages.contains(where: { $0.messageId == message.messageId }) {
-                result.append(message)
-            }
-        }
-    }
-    
-    // returns count of inbox messages (save to inbox)
-    private mutating func addNewMessages(messagesFromServer messages: [IterableInAppMessage]) -> Int {
-        var inboxCount = 0
-        messages.forEach { message in
-            if !messagesMap.contains(where: { $0.key == message.messageId }) {
-                if message.saveToInbox == true {
-                    inboxCount += 1
+        var messagesOverwritten = 0
+        var newMessagesMap = OrderedDictionary<String, IterableInAppMessage>()
+        messages.forEach { serverMessage in
+            let messageId = serverMessage.messageId
+            if let existingMessage = messagesMap[messageId] {
+                if Self.shouldOverwrite(clientMessage: existingMessage, withServerMessage: serverMessage) {
+                    newMessagesMap[messageId] = serverMessage
+                    messagesOverwritten += 1
+                } else {
+                    newMessagesMap[messageId] = existingMessage
                 }
-                
-                messagesMap[message.messageId] = message
-                
-                IterableAPI.internalImplementation?.track(inAppDelivery: message)
+            } else {
+                newMessagesMap[messageId] = serverMessage
             }
         }
         
-        return inboxCount
+        let deliveredMessages = addedMessages.filter { $0.read != true }
+        
+        return MergeMessagesResult(inboxChanged: removedInboxCount + addedInboxCount + messagesOverwritten > 0,
+                                   messagesMap: newMessagesMap,
+                                   deliveredMessages: deliveredMessages)
     }
     
-    private var messagesMap: OrderedDictionary<String, IterableInAppMessage>
+    private let messagesMap: OrderedDictionary<String, IterableInAppMessage>
     private let messages: [IterableInAppMessage]
+
+    // We should only overwrite if the server is read and client is not read.
+    // This is because some client changes may not have propagated to server yet.
+    private static func shouldOverwrite(clientMessage: IterableInAppMessage,
+                                        withServerMessage serverMessage: IterableInAppMessage) -> Bool {
+        serverMessage.read && !clientMessage.read
+    }
 }

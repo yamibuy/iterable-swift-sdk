@@ -1,5 +1,4 @@
 //
-//  Created by Tapash Majumder on 6/8/18.
 //  Copyright © 2018 Iterable. All rights reserved.
 //
 
@@ -9,175 +8,153 @@ import UserNotifications
     var contentHandler: ((UNNotificationContent) -> Void)?
     var bestAttemptContent: UNMutableNotificationContent?
     
-    @objc open override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
+    @objc override open func didReceive(_ request: UNNotificationRequest,
+                                        withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         self.contentHandler = contentHandler
         bestAttemptContent = (request.content.mutableCopy() as? UNMutableNotificationContent)
         
-        // IMPORTANT: need to add this to the documentation
-        bestAttemptContent?.categoryIdentifier = getCategory(fromContent: request.content)
+        resolveCategory(from: request.content)
+
+        retrieveAttachment(from: request.content)
         
-        guard let itblDictionary = request.content.userInfo[JsonKey.Payload.metadata] as? [AnyHashable: Any] else {
-            if let bestAttemptContent = bestAttemptContent {
-                contentHandler(bestAttemptContent)
-            }
-            
+        checkPushCreationCompletion()
+    }
+    
+    @objc override open func serviceExtensionTimeWillExpire() {
+        // Called just before the extension will be terminated by the system.
+        // Use this as an opportunity to deliver your "best attempt" at modified content, otherwise the original push payload will be used.
+        
+        callContentHandler()
+    }
+    
+    // MARK: - Private
+    
+    private func retrieveAttachment(from content: UNNotificationContent) {
+        guard let metadata = content.userInfo[JsonKey.Payload.metadata] as? [AnyHashable: Any],
+              let attachmentUrlString = metadata[JsonKey.Payload.attachmentUrl] as? String,
+              let url = URL(string: attachmentUrlString) else {
+            attachmentRetrievalFinished = true
             return
         }
         
-        var contentHandlerCalled = false
-        contentHandlerCalled = loadAttachment(itblDictionary: itblDictionary)
+        stopCurrentAttachmentDownloadTask()
         
-        if !contentHandlerCalled {
-            if let bestAttemptContent = bestAttemptContent {
-                contentHandler(bestAttemptContent)
+        attachmentDownloadTask = createAttachmentDownloadTask(url: url)
+        attachmentDownloadTask?.resume()
+    }
+    
+    private func createAttachmentDownloadTask(url: URL) -> URLSessionDownloadTask {
+        return URLSession.shared.downloadTask(with: url) { [weak self] location, response, error in
+            guard let strongSelf = self, error == nil, let response = response, let responseUrl = response.url, let location = location else {
+                self?.attachmentRetrievalFinished = true
+                return
+            }
+            
+            let attachmentId = UUID().uuidString + ITBNotificationServiceExtension.getAttachmentIdSuffix(response: response,
+                                                                                                         responseUrl: responseUrl)
+            let tempFileUrl = FileManager.default.temporaryDirectory.appendingPathComponent(attachmentId)
+            
+            var attachment: UNNotificationAttachment?
+            
+            do {
+                try FileManager.default.moveItem(at: location, to: tempFileUrl)
+                attachment = try UNNotificationAttachment(identifier: attachmentId, url: tempFileUrl, options: nil)
+            } catch {
+                self?.attachmentRetrievalFinished = true
+                return
+            }
+            
+            if let attachment = attachment, let content = strongSelf.bestAttemptContent, let handler = strongSelf.contentHandler {
+                content.attachments.append(attachment)
+                handler(content)
+            } else {
+                self?.attachmentRetrievalFinished = true
+                return
             }
         }
     }
     
-    @objc open override func serviceExtensionTimeWillExpire() {
-        // Called just before the extension will be terminated by the system.
-        // Use this as an opportunity to deliver your "best attempt" at modified content, otherwise the original push payload will be used.
+    private func stopCurrentAttachmentDownloadTask() {
+        attachmentDownloadTask?.cancel()
+        attachmentDownloadTask = nil
+    }
+    
+    /// If a category id can be obtained from the message content, we set `categoryId` to the value obtained from message.
+    /// Otherwise, if a messageId is present in the content, we create a new category with the messageId
+    /// and add this newly created category to list of system categories.
+    /// After that we set `categoryId` to messageId.
+    private func resolveCategory(from content: UNNotificationContent) {
+        guard content.categoryIdentifier.count == 0 else {
+            setCategoryId(id: content.categoryIdentifier)
+            return
+        }
+        guard let messageId = NotificationContentParser.getIterableMessageId(from: content) else {
+            setCategoryId(id: "")
+            return
+        }
+
+        let category = UNNotificationCategory(identifier: messageId,
+                                              actions: NotificationContentParser.getNotificationActions(from: content),
+                                              intentIdentifiers: [],
+                                              options: [])
+
+        Self.createCategory(category: category, afterCategoryCreated: { [weak self] in self?.setCategoryId(id: messageId) })
+    }
+    
+    private static func createCategory(category: UNNotificationCategory, afterCategoryCreated: (() -> Void)?) {
+        UNUserNotificationCenter.current().getNotificationCategories { categories in
+            var newCategories = categories
+            newCategories.insert(category)
+            UNUserNotificationCenter.current().setNotificationCategories(newCategories)
+            afterCategoryCreated?()
+        }
+    }
+
+    private func setCategoryId(id: String) {
+        // IMPORTANT: need to add this to the documentation
+        bestAttemptContent?.categoryIdentifier = id
+        
+        // for some reason, the check needs to be put into this dispatch
+        // to function properly for rich pushes with buttons but no image
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+            self.getCategoryIdFinished = true
+        }
+    }
+    
+    private func checkPushCreationCompletion() {
+        if getCategoryIdFinished && attachmentRetrievalFinished {
+            callContentHandler()
+        }
+    }
+    
+    private func callContentHandler() {
+        stopCurrentAttachmentDownloadTask()
+        
         if let contentHandler = contentHandler, let bestAttemptContent = bestAttemptContent {
             contentHandler(bestAttemptContent)
         }
     }
     
-    private func loadAttachment(itblDictionary: [AnyHashable: Any]) -> Bool {
-        guard let attachmentUrlString = itblDictionary[JsonKey.Payload.attachmentUrl] as? String else { return false }
-        guard let url = URL(string: attachmentUrlString) else { return false }
+    private static func getAttachmentIdSuffix(response: URLResponse, responseUrl: URL) -> String {
+        if let suggestedFilename = response.suggestedFilename {
+            return suggestedFilename
+        }
         
-        let downloadTask = URLSession.shared.downloadTask(with: url, completionHandler: { [weak self] location, response, error in
-            guard let strongSelf = self else { return }
-            
-            if error == nil, let response = response, let responseUrl = response.url, let location = location {
-                let tempDirectoryUrl = FileManager.default.temporaryDirectory
-                var attachmentIdString = UUID().uuidString + responseUrl.lastPathComponent
-                if let suggestedFilename = response.suggestedFilename {
-                    attachmentIdString = UUID().uuidString + suggestedFilename
-                }
-                
-                var attachment: UNNotificationAttachment?
-                let tempFileUrl = tempDirectoryUrl.appendingPathComponent(attachmentIdString)
-                do {
-                    try FileManager.default.moveItem(at: location, to: tempFileUrl)
-                    attachment = try UNNotificationAttachment(identifier: attachmentIdString, url: tempFileUrl, options: nil)
-                } catch { /* TODO: FileManager or attachment error */ }
-                
-                if let attachment = attachment, let bestAttemptContent = strongSelf.bestAttemptContent, let contentHandler = strongSelf.contentHandler {
-                    bestAttemptContent.attachments.append(attachment)
-                    contentHandler(bestAttemptContent)
-                }
-            } else { /* TODO: handle download error */ }
-        })
-        
-        downloadTask.resume()
-        return true
+        return responseUrl.lastPathComponent
     }
     
-    private func getCategory(fromContent content: UNNotificationContent) -> String {
-        if content.categoryIdentifier.count == 0 {
-            guard let itblDictionary = content.userInfo[JsonKey.Payload.metadata] as? [AnyHashable: Any] else {
-                return ""
-            }
-            
-            guard let messageId = itblDictionary[JsonKey.Payload.messageId] as? String else {
-                return ""
-            }
-            
-            var actionButtons: [[AnyHashable: Any]] = []
-            if let actionButtonsFromITBLPayload = itblDictionary[JsonKey.Payload.actionButtons] as? [[AnyHashable: Any]] {
-                actionButtons = actionButtonsFromITBLPayload
-            } else {
-                #if DEBUG
-                    if let actionButtonsFromUserInfo = content.userInfo[JsonKey.Payload.actionButtons] as? [[AnyHashable: Any]] {
-                        actionButtons = actionButtonsFromUserInfo
-                    }
-                #endif
-            }
-            
-            var notificationActions = [UNNotificationAction]()
-            for actionButton in actionButtons {
-                if let notificationAction = createNotificationActionButton(buttonDictionary: actionButton) {
-                    notificationActions.append(notificationAction)
-                }
-            }
-            
-            messageCategory = UNNotificationCategory(identifier: messageId, actions: notificationActions, intentIdentifiers: [], options: [])
-            if let messageCategory = messageCategory {
-                UNUserNotificationCenter.current().getNotificationCategories { categories in
-                    var newCategories = categories
-                    newCategories.insert(messageCategory)
-                    UNUserNotificationCenter.current().setNotificationCategories(newCategories)
-                }
-            }
-            
-            return messageId
-        } else {
-            return content.categoryIdentifier
+    private var getCategoryIdFinished: Bool = false {
+        didSet {
+            checkPushCreationCompletion()
         }
     }
     
-    private func createNotificationActionButton(buttonDictionary: [AnyHashable: Any]) -> UNNotificationAction? {
-        guard let identifier = buttonDictionary[JsonKey.ActionButton.identifier] as? String else {
-            return nil
-        }
-        
-        guard let title = buttonDictionary[JsonKey.ActionButton.title] as? String else {
-            return nil
-        }
-        
-        let buttonType = getButtonType(buttonDictionary: buttonDictionary)
-        var openApp = true
-        if let openAppFromDict = buttonDictionary[JsonKey.ActionButton.openApp] as? NSNumber {
-            openApp = openAppFromDict.boolValue
-        }
-        
-        var requiresUnlock = false
-        if let requiresUnlockFromDict = buttonDictionary[JsonKey.ActionButton.requiresUnlock] as? NSNumber {
-            requiresUnlock = requiresUnlockFromDict.boolValue
-        }
-        
-        var actionOptions: UNNotificationActionOptions = []
-        if buttonType == IterableButtonTypeDestructive {
-            actionOptions.insert(.destructive)
-        }
-        
-        if openApp {
-            actionOptions.insert(.foreground)
-        }
-        
-        if requiresUnlock || openApp {
-            actionOptions.insert(.authenticationRequired)
-        }
-        
-        if buttonType == IterableButtonTypeTextInput {
-            let inputTitle = buttonDictionary[JsonKey.ActionButton.inputTitle] as? String ?? ""
-            let inputPlaceholder = buttonDictionary[JsonKey.ActionButton.inputPlaceholder] as? String ?? ""
-            
-            return UNTextInputNotificationAction(identifier: identifier,
-                                                 title: title,
-                                                 options: actionOptions,
-                                                 textInputButtonTitle: inputTitle,
-                                                 textInputPlaceholder: inputPlaceholder)
-        } else {
-            return UNNotificationAction(identifier: identifier, title: title, options: actionOptions)
-        }
-    }
-    
-    private func getButtonType(buttonDictionary: [AnyHashable: Any]) -> String {
-        guard let buttonType = buttonDictionary[JsonKey.ActionButton.buttonType] as? String else {
-            return IterableButtonTypeDefault
-        }
-        
-        if buttonType == IterableButtonTypeTextInput || buttonType == IterableButtonTypeDestructive {
-            return buttonType
-        } else {
-            return IterableButtonTypeDefault
+    private var attachmentRetrievalFinished: Bool = false {
+        didSet {
+            checkPushCreationCompletion()
         }
     }
     
     private var messageCategory: UNNotificationCategory?
-    private let IterableButtonTypeDefault = "default"
-    private let IterableButtonTypeDestructive = "destructive"
-    private let IterableButtonTypeTextInput = "textInput"
+    private var attachmentDownloadTask: URLSessionDownloadTask?
 }

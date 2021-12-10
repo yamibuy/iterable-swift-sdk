@@ -1,17 +1,15 @@
 //
-//  Created by David Truong on 9/14/16.
-//  Ported to Swift by Tapash Majumder on 6/7/18.
 //  Copyright © 2018 Iterable. All rights reserved.
 //
-// Utility Methods for in-app
-// All classes/structs are internal.
 
 import UIKit
 
-// This is Internal Struct, no public methods
+/// Utility Methods for in-app
+/// All classes/structs are internal.
+
 struct InAppHelper {
     static func getInAppMessagesFromServer(apiClient: ApiClientProtocol, number: Int) -> Future<[IterableInAppMessage], SendRequestError> {
-        return apiClient.getInAppMessages(NSNumber(value: number)).map {
+        apiClient.getInAppMessages(NSNumber(value: number)).map {
             InAppMessageParser.parse(payload: $0).compactMap { parseResult in
                 process(parseResult: parseResult, apiClient: apiClient)
             }
@@ -22,7 +20,7 @@ struct InAppHelper {
         case localResource(name: String) // applewebdata://abc-def/something => something
         case iterableCustomAction(name: String) // iterable://something => something
         case customAction(name: String) // action:something => something or itbl://something => something
-        case regularUrl(URL) // https://something => https://something
+        case regularUrl(URL) // protocol://something => protocol://something
     }
     
     static func parse(inAppUrl url: URL) -> InAppClickedUrl? {
@@ -84,7 +82,7 @@ struct InAppHelper {
     }
     
     private static func dropLeadingSlashes(str: String) -> String {
-        return String(str.drop { $0 == "/" })
+        String(str.drop { $0 == "/" })
     }
     
     private static func dropScheme(urlString: String, scheme: String) -> String {
@@ -93,7 +91,7 @@ struct InAppHelper {
     }
     
     // process each parseResult and consumes failed message, if messageId is present
-    private static func process(parseResult: IterableResult<IterableInAppMessage, InAppMessageParser.ParseError>, apiClient: ApiClientProtocol) -> IterableInAppMessage? {
+    private static func process(parseResult: Result<IterableInAppMessage, InAppMessageParser.ParseError>, apiClient: ApiClientProtocol) -> IterableInAppMessage? {
         switch parseResult {
         case let .failure(parseError):
             switch parseError {

@@ -1,5 +1,4 @@
 //
-//  Created by Tapash Majumder on 5/18/18.
 //  Copyright © 2018 Iterable. All rights reserved.
 //
 
@@ -7,19 +6,17 @@ import Foundation
 import os
 import UIKit
 
-/// Functionality such as this will be built in for Swift 5.0. This will help with the transition
-enum IterableResult<T, E> {
-    case success(T)
-    case failure(E)
-}
-
-@objc public final class IterableUtil: NSObject {
+@objc final class IterableUtil: NSObject {
     static var rootViewController: UIViewController? {
-        return UIApplication.shared.delegate?.window??.rootViewController
+        if let rootViewController = AppExtensionHelper.application?.delegate?.window??.rootViewController {
+            return rootViewController
+        } else {
+            return AppExtensionHelper.application?.windows.first?.rootViewController
+        }
     }
     
     static func trim(string: String) -> String {
-        return string.trimmingCharacters(in: .whitespaces)
+        string.trimmingCharacters(in: .whitespaces)
     }
     
     static func isNullOrEmpty(string: String?) -> Bool {
@@ -31,11 +28,11 @@ enum IterableResult<T, E> {
     }
     
     static func isNotNullOrEmpty(string: String?) -> Bool {
-        return !isNullOrEmpty(string: string)
+        !isNullOrEmpty(string: string)
     }
     
     static func generateUUID() -> String {
-        return UUID().uuidString
+        UUID().uuidString
     }
     
     /// int is milliseconds since epoch.
@@ -47,14 +44,19 @@ enum IterableResult<T, E> {
     
     /// milliseconds since epoch.
     static func int(fromDate date: Date) -> Int {
-        return Int(date.timeIntervalSince1970 * 1000)
+        Int(date.timeIntervalSince1970 * 1000)
     }
-    
+
+    /// seconds since epoch.
+    static func secondsFromEpoch(for date: Date) -> Int {
+        Int(date.timeIntervalSince1970)
+    }
+
     // given "var1", "val1", "var2", "val2" as input
     // this will return "var1: val1, var2: val2"
     // this is useful for description of an object or struct
     static func describe(_ values: Any..., pairSeparator: String = ": ", separator: String = ", ") -> String {
-        return values.take(2).map { pair in
+        values.take(2).map { pair in
             if pair.count == 0 {
                 return ""
             } else if pair.count == 1 {
@@ -69,14 +71,14 @@ enum IterableResult<T, E> {
     
     // converts from IterableURLDelegate to UrlHandler
     static func urlHandler(fromUrlDelegate urlDelegate: IterableURLDelegate?, inContext context: IterableActionContext) -> UrlHandler {
-        return { url in
+        { url in
             urlDelegate?.handle(iterableURL: url, inContext: context) == true
         }
     }
     
     // converts from IterableCustomActionDelegate to CustomActionHandler
     static func customActionHandler(fromCustomActionDelegate customActionDelegate: IterableCustomActionDelegate?, inContext context: IterableActionContext) -> CustomActionHandler {
-        return { _ in
+        { _ in
             guard let customActionDelegate = customActionDelegate else {
                 return false
             }

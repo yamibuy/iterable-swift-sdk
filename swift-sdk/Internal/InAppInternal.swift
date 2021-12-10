@@ -1,17 +1,15 @@
 //
-//  Created by Tapash Majumder on 2/28/19.
 //  Copyright © 2019 Iterable. All rights reserved.
 //
 
 import Foundation
 
 protocol InAppFetcherProtocol {
-    // Fetch from server and sync
     func fetch() -> Future<[IterableInAppMessage], Error>
 }
 
 /// For callbacks when silent push notifications arrive
-protocol InAppNotifiable {
+protocol InAppNotifiable: AnyObject {
     func scheduleSync() -> Future<Bool, Error>
     func onInAppRemoved(messageId: String)
     func reset() -> Future<Bool, Error>
@@ -33,6 +31,10 @@ class InAppFetcher: InAppFetcherProtocol {
         self.apiClient = apiClient
     }
     
+    deinit {
+        ITBInfo()
+    }
+    
     func fetch() -> Future<[IterableInAppMessage], Error> {
         ITBInfo()
         
@@ -44,13 +46,10 @@ class InAppFetcher: InAppFetcherProtocol {
         return InAppHelper.getInAppMessagesFromServer(apiClient: apiClient, number: numMessages).mapFailure { $0 }
     }
     
+    // MARK: - Private/Internal
+    
     private weak var apiClient: ApiClientProtocol?
     
-    deinit {
-        ITBInfo()
-    }
-    
-    // how many messages to fetch
     private let numMessages = 100
 }
 
@@ -64,30 +63,30 @@ struct InAppMessageContext {
     var inboxSessionId: String?
     
     static func from(message: IterableInAppMessage, location: InAppLocation?, inboxSessionId: String? = nil) -> InAppMessageContext {
-        return InAppMessageContext(messageId: message.messageId,
-                                   saveToInbox: message.saveToInbox,
-                                   silentInbox: message.silentInbox,
-                                   location: location,
-                                   inboxSessionId: inboxSessionId)
+        InAppMessageContext(messageId: message.messageId,
+                            saveToInbox: message.saveToInbox,
+                            silentInbox: message.silentInbox,
+                            location: location,
+                            inboxSessionId: inboxSessionId)
     }
     
-    // For backward compatibility, assume .inApp
+    /// For backward compatibility, assume .inApp
     static func from(messageId: String, deviceMetadata _: DeviceMetadata) -> InAppMessageContext {
-        return InAppMessageContext(messageId: messageId,
-                                   saveToInbox: false,
-                                   silentInbox: false,
-                                   location: .inApp,
-                                   inboxSessionId: nil)
+        InAppMessageContext(messageId: messageId,
+                            saveToInbox: false,
+                            silentInbox: false,
+                            location: .inApp,
+                            inboxSessionId: nil)
     }
     
     func toMessageContextDictionary() -> [AnyHashable: Any] {
         var context = [AnyHashable: Any]()
         
-        context.setValue(for: .saveToInbox, value: saveToInbox)
-        context.setValue(for: .silentInbox, value: silentInbox)
+        context.setValue(for: JsonKey.saveToInbox, value: saveToInbox)
+        context.setValue(for: JsonKey.silentInbox, value: silentInbox)
         
         if let location = location {
-            context.setValue(for: .inAppLocation, value: location)
+            context.setValue(for: JsonKey.inAppLocation, value: location)
         }
         
         return context

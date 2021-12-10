@@ -1,5 +1,4 @@
 //
-//  Created by Tapash Majumder on 6/14/18.
 //  Copyright © 2018 Iterable. All rights reserved.
 //
 
@@ -9,63 +8,59 @@ import UserNotifications
 
 // Returns whether notifications are enabled
 protocol NotificationStateProviderProtocol {
-    var notificationsEnabled: Promise<Bool, Error> { get }
+    func isNotificationsEnabled(withCallback callback: @escaping (Bool) -> Void)
     
     func registerForRemoteNotifications()
 }
 
 struct SystemNotificationStateProvider: NotificationStateProviderProtocol {
-    var notificationsEnabled: Promise<Bool, Error> {
-        let result = Promise<Bool, Error>()
-        
+    func isNotificationsEnabled(withCallback callback: @escaping (Bool) -> Void) {
         if #available(iOS 10.0, *) {
-            UNUserNotificationCenter.current().getNotificationSettings { settings in
-                if settings.authorizationStatus == .authorized {
-                    result.resolve(with: true)
-                } else {
-                    result.resolve(with: false)
-                }
+            UNUserNotificationCenter.current().getNotificationSettings { setttings in
+                callback(setttings.authorizationStatus == .authorized)
             }
         } else {
             // Fallback on earlier versions
-            if let currentSettings = UIApplication.shared.currentUserNotificationSettings, currentSettings.types != [] {
-                result.resolve(with: true)
+            if let currentSettings = AppExtensionHelper.application?.currentUserNotificationSettings,
+               currentSettings.types != [] {
+                callback(true)
             } else {
-                result.resolve(with: false)
+                callback(false)
             }
         }
-        
-        return result
     }
     
     func registerForRemoteNotifications() {
         DispatchQueue.main.async {
-            UIApplication.shared.registerForRemoteNotifications()
+            AppExtensionHelper.application?.registerForRemoteNotifications()
         }
     }
 }
 
-@available(iOS 10.0, *)
 public protocol NotificationResponseProtocol {
     var userInfo: [AnyHashable: Any] { get }
     
     var actionIdentifier: String { get }
     
-    var textInputResponse: UNTextInputNotificationResponse? { get }
+    var userText: String? { get }
 }
 
 @available(iOS 10.0, *)
 struct UserNotificationResponse: NotificationResponseProtocol {
     var userInfo: [AnyHashable: Any] {
-        return response.notification.request.content.userInfo
+        response.notification.request.content.userInfo
     }
     
     var actionIdentifier: String {
-        return response.actionIdentifier
+        response.actionIdentifier
     }
     
-    var textInputResponse: UNTextInputNotificationResponse? {
-        return response as? UNTextInputNotificationResponse
+    var userText: String? {
+        guard let textInputResponse = response as? UNTextInputNotificationResponse else {
+            return nil
+        }
+
+        return textInputResponse.userText
     }
     
     private let response: UNNotificationResponse
@@ -76,21 +71,23 @@ struct UserNotificationResponse: NotificationResponseProtocol {
 }
 
 /// Abstraction of push tracking
-public protocol PushTrackerProtocol: AnyObject {
+protocol PushTrackerProtocol: AnyObject {
     var lastPushPayload: [AnyHashable: Any]? { get }
     
+    @discardableResult
     func trackPushOpen(_ userInfo: [AnyHashable: Any],
                        dataFields: [AnyHashable: Any]?,
                        onSuccess: OnSuccessHandler?,
-                       onFailure: OnFailureHandler?)
+                       onFailure: OnFailureHandler?) -> Future<SendRequestValue, SendRequestError>
     
+    @discardableResult
     func trackPushOpen(_ campaignId: NSNumber,
                        templateId: NSNumber?,
-                       messageId: String?,
+                       messageId: String,
                        appAlreadyRunning: Bool,
                        dataFields: [AnyHashable: Any]?,
                        onSuccess: OnSuccessHandler?,
-                       onFailure: OnFailureHandler?)
+                       onFailure: OnFailureHandler?) -> Future<SendRequestValue, SendRequestError>
 }
 
 extension PushTrackerProtocol {
@@ -98,13 +95,13 @@ extension PushTrackerProtocol {
                        dataFields: [AnyHashable: Any]? = nil) {
         trackPushOpen(userInfo,
                       dataFields: dataFields,
-                      onSuccess: IterableAPIInternal.defaultOnSuccess(identifier: "trackPushOpen"),
-                      onFailure: IterableAPIInternal.defaultOnFailure(identifier: "trackPushOpen"))
+                      onSuccess: nil,
+                      onFailure: nil)
     }
     
     func trackPushOpen(_ campaignId: NSNumber,
                        templateId: NSNumber? = nil,
-                       messageId: String? = nil,
+                       messageId: String,
                        appAlreadyRunning: Bool = false,
                        dataFields: [AnyHashable: Any]? = nil) {
         trackPushOpen(campaignId,
@@ -112,8 +109,8 @@ extension PushTrackerProtocol {
                       messageId: messageId,
                       appAlreadyRunning: appAlreadyRunning,
                       dataFields: dataFields,
-                      onSuccess: IterableAPIInternal.defaultOnSuccess(identifier: "trackPushOpen"),
-                      onFailure: IterableAPIInternal.defaultOnFailure(identifier: "trackPushOpen"))
+                      onSuccess: nil,
+                      onFailure: nil)
     }
 }
 
@@ -125,21 +122,24 @@ extension PushTrackerProtocol {
 extension UIApplication: ApplicationStateProviderProtocol {}
 
 struct IterableAppIntegrationInternal {
-    private let tracker: PushTrackerProtocol
+    private weak var tracker: PushTrackerProtocol?
     private let urlDelegate: IterableURLDelegate?
     private let customActionDelegate: IterableCustomActionDelegate?
     private let urlOpener: UrlOpenerProtocol?
-    private let inAppNotifiable: InAppNotifiable
+    private let allowedProtocols: [String]
+    private weak var inAppNotifiable: InAppNotifiable?
     
     init(tracker: PushTrackerProtocol,
          urlDelegate: IterableURLDelegate? = nil,
          customActionDelegate: IterableCustomActionDelegate? = nil,
          urlOpener: UrlOpenerProtocol? = nil,
+         allowedProtocols: [String] = [],
          inAppNotifiable: InAppNotifiable) {
         self.tracker = tracker
         self.urlDelegate = urlDelegate
         self.customActionDelegate = customActionDelegate
         self.urlOpener = urlOpener
+        self.allowedProtocols = allowedProtocols
         self.inAppNotifiable = inAppNotifiable
     }
     
@@ -158,10 +158,10 @@ struct IterableAppIntegrationInternal {
         if case let NotificationInfo.silentPush(silentPush) = NotificationHelper.inspect(notification: userInfo) {
             switch silentPush.notificationType {
             case .update:
-                _ = inAppNotifiable.scheduleSync()
+                _ = inAppNotifiable?.scheduleSync()
             case .remove:
                 if let messageId = silentPush.messageId {
-                    inAppNotifiable.onInAppRemoved(messageId: messageId)
+                    inAppNotifiable?.onInAppRemoved(messageId: messageId)
                 } else {
                     ITBError("messageId not found in 'remove' silent push")
                 }
@@ -213,12 +213,12 @@ struct IterableAppIntegrationInternal {
             return
         }
         
-        let dataFields = IterableAppIntegrationInternal.createIterableDataFields(actionIdentifier: response.actionIdentifier, userText: response.textInputResponse?.userText)
-        let action = IterableAppIntegrationInternal.createIterableAction(actionIdentifier: response.actionIdentifier, userText: response.textInputResponse?.userText, userInfo: userInfo, iterableElement: itbl)
+        let dataFields = IterableAppIntegrationInternal.createIterableDataFields(actionIdentifier: response.actionIdentifier, userText: response.userText)
+        let action = IterableAppIntegrationInternal.createIterableAction(actionIdentifier: response.actionIdentifier, userText: response.userText, userInfo: userInfo, iterableElement: itbl)
         
         // Track push open
-        if let _ = dataFields[JsonKey.actionIdentifier.jsonKey] { // i.e., if action is not dismiss
-            tracker.trackPushOpen(userInfo, dataFields: dataFields)
+        if let _ = dataFields[JsonKey.actionIdentifier] { // i.e., if action is not dismiss
+            tracker?.trackPushOpen(userInfo, dataFields: dataFields)
         }
         
         // Execute the action
@@ -228,7 +228,8 @@ struct IterableAppIntegrationInternal {
                                          context: context,
                                          urlHandler: IterableUtil.urlHandler(fromUrlDelegate: urlDelegate, inContext: context),
                                          customActionHandler: IterableUtil.customActionHandler(fromCustomActionDelegate: customActionDelegate, inContext: context),
-                                         urlOpener: urlOpener)
+                                         urlOpener: urlOpener,
+                                         allowedProtocols: allowedProtocols)
         }
         
         completionHandler?()
@@ -288,15 +289,15 @@ struct IterableAppIntegrationInternal {
         var dataFields = [AnyHashable: Any]()
         
         if actionIdentifier == UNNotificationDefaultActionIdentifier {
-            dataFields[JsonKey.actionIdentifier.jsonKey] = JsonValue.ActionIdentifier.pushOpenDefault
+            dataFields[JsonKey.actionIdentifier] = JsonValue.ActionIdentifier.pushOpenDefault
         } else if actionIdentifier == UNNotificationDismissActionIdentifier {
             // We don't track dismiss actions yet
         } else {
-            dataFields[JsonKey.actionIdentifier.jsonKey] = actionIdentifier
+            dataFields[JsonKey.actionIdentifier] = actionIdentifier
         }
         
         if let userText = userText {
-            dataFields[JsonKey.userText.jsonKey] = userText
+            dataFields[JsonKey.userText] = userText
         }
         
         return dataFields
@@ -309,8 +310,8 @@ struct IterableAppIntegrationInternal {
         }
         
         // Track push open
-        let dataFields = [JsonKey.actionIdentifier.jsonKey: JsonValue.ActionIdentifier.pushOpenDefault]
-        tracker.trackPushOpen(userInfo, dataFields: dataFields)
+        let dataFields = [JsonKey.actionIdentifier: JsonValue.ActionIdentifier.pushOpenDefault]
+        tracker?.trackPushOpen(userInfo, dataFields: dataFields)
         
         guard let itbl = IterableAppIntegrationInternal.itblValue(fromUserInfo: userInfo) else {
             return
@@ -319,16 +320,18 @@ struct IterableAppIntegrationInternal {
         // Execute the action
         if let action = IterableAppIntegrationInternal.createDefaultAction(userInfo: userInfo, iterableElement: itbl) {
             let context = IterableActionContext(action: action, source: .push)
+            
             IterableActionRunner.execute(action: action,
                                          context: context,
                                          urlHandler: IterableUtil.urlHandler(fromUrlDelegate: urlDelegate, inContext: context),
                                          customActionHandler: IterableUtil.customActionHandler(fromCustomActionDelegate: customActionDelegate, inContext: context),
-                                         urlOpener: urlOpener)
+                                         urlOpener: urlOpener,
+                                         allowedProtocols: allowedProtocols)
         }
     }
     
     private func alreadyTracked(userInfo: [AnyHashable: Any]) -> Bool {
-        guard let lastPushPayload = tracker.lastPushPayload else {
+        guard let lastPushPayload = tracker?.lastPushPayload else {
             return false
         }
         
@@ -356,10 +359,10 @@ struct IterableAppIntegrationInternal {
     // Normally default action would be stored in key "itbl/"defaultAction"
     // In legacy templates it gets saved in the key "url"
     private static func legacyDefaultActionFromPayload(userInfo: [AnyHashable: Any]) -> IterableAction? {
-        if let deepLinkUrl = userInfo[JsonKey.url.jsonKey] as? String {
+        if let deepLinkUrl = userInfo[JsonKey.url] as? String {
             return IterableAction.actionOpenUrl(fromUrlString: deepLinkUrl)
-        } else {
-            return nil
         }
+        
+        return nil
     }
 }

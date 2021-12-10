@@ -1,25 +1,36 @@
 //
-//  Created by Tapash Majumder on 9/12/19.
 //  Copyright © 2019 Iterable. All rights reserved.
 //
 
 import Foundation
 
-class InboxImpressionTracker {
-    struct Impression {
+public class InboxImpressionTracker {
+    public struct Impression {
         let messageId: String
         let silentInbox: Bool
         let displayCount: Int
         let duration: TimeInterval
         
-        func toIterableInboxImpression() -> IterableInboxImpression {
-            return IterableInboxImpression(messageId: messageId, silentInbox: silentInbox, displayCount: displayCount, displayDuration: duration)
+        public func toIterableInboxImpression() -> IterableInboxImpression {
+            IterableInboxImpression(messageId: messageId, silentInbox: silentInbox, displayCount: displayCount, displayDuration: duration)
+        }
+        
+        public init(messageId: String, silentInbox: Bool, displayCount: Int, duration: TimeInterval) {
+            self.messageId = messageId
+            self.silentInbox = silentInbox
+            self.displayCount = displayCount
+            self.duration = duration
         }
     }
     
-    struct RowInfo {
+    public struct RowInfo {
         let messageId: String
         let silentInbox: Bool
+        
+        public init(messageId: String, silentInbox: Bool) {
+            self.messageId = messageId
+            self.silentInbox = silentInbox
+        }
     }
     
     func updateVisibleRows(visibleRows: [RowInfo]) {
@@ -82,13 +93,13 @@ class InboxImpressionTracker {
 }
 
 extension InboxImpressionTracker.RowInfo: Hashable {
-    func hash(into hasher: inout Hasher) {
+    public func hash(into hasher: inout Hasher) {
         hasher.combine(messageId)
     }
 }
 
 extension InboxImpressionTracker.RowInfo: Equatable {
-    static func == (lhs: InboxImpressionTracker.RowInfo, rhs: InboxImpressionTracker.RowInfo) -> Bool {
-        return lhs.messageId == rhs.messageId
+    public static func == (lhs: InboxImpressionTracker.RowInfo, rhs: InboxImpressionTracker.RowInfo) -> Bool {
+        lhs.messageId == rhs.messageId
     }
 }

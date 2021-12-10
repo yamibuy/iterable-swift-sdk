@@ -1,5 +1,4 @@
 //
-//  Created by Tapash Majumder on 4/30/19.
 //  Copyright © 2019 Iterable. All rights reserved.
 //
 
@@ -35,6 +34,24 @@ open class IterableInboxNavigationViewController: UINavigationController {
         }
     }
     
+    /// We default, we don't show any message when inbox is empty.
+    /// If you want to show a message, such as, "There are no messages", you will
+    /// have to set the `noMessagesTitle` and  `noMessagesText` properties below.
+
+    /// Use this to set the title to show when there are no message in the inbox.
+    @IBInspectable public var noMessagesTitle: String? = nil {
+        didSet {
+            inboxViewController?.noMessagesTitle = noMessagesTitle
+        }
+    }
+
+    /// Use this to set the message to show when there are no message in the inbox.
+    @IBInspectable public var noMessagesBody: String? = nil {
+        didSet {
+            inboxViewController?.noMessagesBody = noMessagesBody
+        }
+    }
+
     /// Set this property to override default inbox display behavior. You should set either this property
     /// or `viewDelegateClassName`property but not both.
     public var viewDelegate: IterableInboxViewControllerViewDelegate? {
@@ -91,8 +108,8 @@ open class IterableInboxNavigationViewController: UINavigationController {
         setup()
     }
     
-    open override func viewDidLoad() {
-        ITBInfo()
+    override open func viewDidLoad() {
+        ITBDebug()
         
         super.viewDidLoad()
         
@@ -113,16 +130,16 @@ open class IterableInboxNavigationViewController: UINavigationController {
         }
     }
     
-    open override func viewWillAppear(_ animated: Bool) {
-        ITBInfo()
+    override open func viewWillAppear(_ animated: Bool) {
+        ITBDebug()
         
         super.viewWillAppear(animated)
         
         inboxViewController?.viewModel.viewWillAppear()
     }
     
-    open override func viewWillDisappear(_ animated: Bool) {
-        ITBInfo()
+    override open func viewWillDisappear(_ animated: Bool) {
+        ITBDebug()
         
         super.viewWillDisappear(animated)
         
@@ -130,7 +147,7 @@ open class IterableInboxNavigationViewController: UINavigationController {
     }
     
     /// Do not use this
-    private override init(rootViewController: UIViewController) {
+    override private init(rootViewController: UIViewController) {
         ITBInfo()
         
         super.init(rootViewController: rootViewController)
@@ -139,7 +156,7 @@ open class IterableInboxNavigationViewController: UINavigationController {
     }
     
     /// Do not use this
-    private override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
+    override private init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         ITBInfo()
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
         setup()
@@ -189,6 +206,6 @@ open class IterableInboxNavigationViewController: UINavigationController {
     }
     
     private var inboxViewController: IterableInboxViewController? {
-        return viewControllers[0] as? IterableInboxViewController
+        viewControllers[0] as? IterableInboxViewController
     }
 }

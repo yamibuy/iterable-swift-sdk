@@ -1,5 +1,4 @@
 //
-//  Created by Tapash Majumder on 6/28/18.
 //  Copyright © 2018 Iterable. All rights reserved.
 //
 
@@ -16,7 +15,7 @@ protocol APNSTypeCheckerProtocol {
 
 struct APNSTypeChecker: APNSTypeCheckerProtocol {
     var apnsType: APNSType {
-        return APNSTypeChecker.isSandboxAPNS() ? .sandbox : .production
+        APNSTypeChecker.isSandboxAPNS() ? .sandbox : .production
     }
     
     private static func isSandboxAPNS() -> Bool {

@@ -1,5 +1,4 @@
 //
-//  Created by Tapash Majumder on 4/11/19.
 //  Copyright © 2019 Iterable. All rights reserved.
 //
 
@@ -36,15 +35,15 @@ class InboxMessageViewModel {
     }
     
     private static func getTitle(message: IterableInAppMessage) -> String {
-        return message.inboxMetadata?.title ?? ""
+        message.inboxMetadata?.title ?? ""
     }
     
     private static func getSubtitle(message: IterableInAppMessage) -> String? {
-        return message.inboxMetadata?.subtitle
+        message.inboxMetadata?.subtitle
     }
     
     private static func getImageUrl(message: IterableInAppMessage) -> String? {
-        return message.inboxMetadata?.icon
+        message.inboxMetadata?.icon
     }
 }
 

@@ -1,12 +1,11 @@
 //
-//  Created by Tapash Majumder on 6/5/18.
 //  Copyright © 2018 Iterable. All rights reserved.
 //
 
 import Foundation
 
 @objc public class IterableAttributionInfo: NSObject, Codable {
-    private enum Keys: String {
+    enum CodingKeys: String, CodingKey {
         case campaignId
         case templateId
         case messageId
@@ -20,12 +19,6 @@ import Foundation
         self.campaignId = campaignId
         self.templateId = templateId
         self.messageId = messageId
-    }
-    
-    enum CodingKeys: String, CodingKey {
-        case campaignId
-        case templateId
-        case messageId
     }
     
     public required init(from decoder: Decoder) throws {
@@ -42,11 +35,11 @@ import Foundation
         try container.encode(messageId, forKey: .messageId)
     }
     
-    public override var description: String {
-        return "campaignId: \(campaignId), templateId: \(templateId), messageId: \(messageId)"
+    override public var description: String {
+        "campaignId: \(campaignId), templateId: \(templateId), messageId: \(messageId)"
     }
 }
 
 func == (lhs: IterableAttributionInfo, rhs: IterableAttributionInfo) -> Bool {
-    return lhs.campaignId == rhs.campaignId && lhs.templateId == rhs.templateId && lhs.messageId == rhs.messageId
+    lhs.campaignId == rhs.campaignId && lhs.templateId == rhs.templateId && lhs.messageId == rhs.messageId
 }

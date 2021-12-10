@@ -1,10 +1,9 @@
 //
-//  Note: We have to do the layout in code because Swift Package Manager does not support
-//        resources yet. We can remove this once support for resoures is added.
-//
-//  Created by Tapash Majumder on 11/25/19.
 //  Copyright © 2019 Iterable. All rights reserved.
 //
+
+///  Note: We have to do the layout in code because Swift Package Manager does not support
+///        resources yet. We can remove this once support for resoures is added.
 
 import Foundation
 import UIKit
@@ -74,7 +73,7 @@ extension IterableInboxCell {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
         label.font = UIFont.systemFont(ofSize: 13.0)
-        label.textColor = UIColor.lightGray
+        label.textColor = .iterableSecondaryLabel
         label.setContentHuggingPriority(UILayoutPriority(rawValue: 249), for: .horizontal)
         label.setContentHuggingPriority(UILayoutPriority(rawValue: 249), for: .vertical)
         label.numberOfLines = 3
@@ -85,7 +84,7 @@ extension IterableInboxCell {
         let label = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
         label.font = UIFont.systemFont(ofSize: 10.0)
-        label.textColor = UIColor.lightGray
+        label.textColor = .iterableSecondaryLabel
         label.setContentHuggingPriority(UILayoutPriority(rawValue: 249), for: .horizontal)
         label.setContentHuggingPriority(UILayoutPriority(rawValue: 249), for: .vertical)
         return label

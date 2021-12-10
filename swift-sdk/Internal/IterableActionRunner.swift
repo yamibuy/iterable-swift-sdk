@@ -1,43 +1,34 @@
 //
-//  Created by Tapash Majumder on 6/4/18.
 //  Copyright © 2018 Iterable. All rights reserved.
 //
 
 import Foundation
 import UIKit
 
-public typealias UrlHandler = (URL) -> Bool
-public typealias CustomActionHandler = (String) -> Bool
-
 /// handles opening of Urls
-@objc public protocol UrlOpenerProtocol: AnyObject {
+@objc protocol UrlOpenerProtocol: AnyObject {
     @objc func open(url: URL)
 }
 
+
 /// Default app opener. Defers to UIApplication open
-public class AppUrlOpener: UrlOpenerProtocol {
+class AppUrlOpener: UrlOpenerProtocol {
     public init() {}
-    
+
     public func open(url: URL) {
-        if #available(iOS 10.0, *) {
-            UIApplication.shared.open(url, options: [:]) { success in
-                if !success {
-                    ITBError("Could not open url: \(url)")
-                }
-            }
-        } else {
-            UIApplication.shared.openURL(url)
-        }
+        AppExtensionHelper.open(url: url)
     }
 }
 
 struct IterableActionRunner {
     // returns true if an action is performed either by us or by the calling app.
-    @discardableResult static func execute(action: IterableAction,
-                                           context: IterableActionContext,
-                                           urlHandler: UrlHandler? = nil,
-                                           customActionHandler: CustomActionHandler? = nil,
-                                           urlOpener: UrlOpenerProtocol? = nil) -> Bool {
+    @discardableResult
+    static func execute(action: IterableAction,
+                        context: IterableActionContext,
+                        urlHandler: UrlHandler? = nil,
+                        customActionHandler: CustomActionHandler? = nil,
+                        urlOpener: UrlOpenerProtocol? = nil,
+                        allowedProtocols: [String] = []) -> Bool {
         let handled = callExternalHandlers(action: action,
                                            from: context.source,
                                            urlHandler: urlHandler,
@@ -46,7 +37,9 @@ struct IterableActionRunner {
         if handled {
             return true
         } else {
-            if case let .openUrl(url) = detectActionType(fromAction: action), shouldOpenUrl(url: url, from: context.source), let urlOpener = urlOpener {
+            if case let .openUrl(url) = detectActionType(fromAction: action),
+               shouldOpenUrl(url: url, from: context.source, withAllowedProtocols: allowedProtocols),
+               let urlOpener = urlOpener {
                 urlOpener.open(url: url)
                 return true
             } else {
@@ -54,6 +47,8 @@ struct IterableActionRunner {
             }
         }
     }
+    
+    // MARK: - Private
     
     // return true if the action is handled by the calling app either by opening a url or performing a custom action.
     private static func callExternalHandlers(action: IterableAction,
@@ -79,10 +74,11 @@ struct IterableActionRunner {
         }
     }
     
-    // MARK: Private
-    
-    private static func shouldOpenUrl(url: URL, from source: IterableActionSource) -> Bool {
-        if source == .push || source == .inApp, let scheme = url.scheme, scheme == "http" || scheme == "https" {
+    private static func shouldOpenUrl(url: URL,
+                                      from source: IterableActionSource,
+                                      withAllowedProtocols allowedProtocols: [String]) -> Bool {
+        if let scheme = url.scheme,
+           scheme == "https" || allowedProtocols.contains(scheme) {
             return true
         } else {
             return false

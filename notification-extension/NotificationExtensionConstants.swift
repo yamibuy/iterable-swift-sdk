@@ -1,5 +1,4 @@
 //
-//  Created by Tapash Majumder on 6/10/18.
 //  Copyright © 2018 Iterable. All rights reserved.
 //
 
@@ -14,6 +13,7 @@ public enum JsonKey {
         static let requiresUnlock = "requiresUnlock"
         static let inputTitle = "inputTitle"
         static let inputPlaceholder = "inputPlaceholder"
+        static let actionIcon = "actionIcon"
     }
     
     public enum Payload {

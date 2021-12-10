@@ -1,11 +1,11 @@
-//  Created by Tapash Majumder on 2/10/20.
+//
 //  Copyright © 2020 Iterable. All rights reserved.
 //
 
 import Foundation
 
 /// Encapsulates an Inbox impression of a message
-final class IterableInboxImpression: NSObject, Codable {
+public class IterableInboxImpression: NSObject, Codable {
     /// The message ID of message
     public let messageId: String
     
@@ -30,7 +30,7 @@ final class IterableInboxImpression: NSObject, Codable {
 }
 
 /// Encapsulates Inbox Session
-final class IterableInboxSession: NSObject, Codable {
+final public class IterableInboxSession: NSObject, Codable {
     /// UUID of the session
     public let id: String?
     

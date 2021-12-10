@@ -1,5 +1,4 @@
 //
-//  Created by Tapash Majumder on 3/5/19.
 //  Copyright © 2019 Iterable. All rights reserved.
 //
 
@@ -22,11 +21,11 @@ protocol InAppDisplayerProtocol {
 
 class InAppDisplayer: InAppDisplayerProtocol {
     func isShowingInApp() -> Bool {
-        return InAppDisplayer.isShowingIterableMessage()
+        InAppDisplayer.isShowingIterableMessage()
     }
     
     func showInApp(message: IterableInAppMessage) -> ShowResult {
-        return InAppDisplayer.show(iterableMessage: message)
+        InAppDisplayer.show(iterableMessage: message)
     }
     
     /**
@@ -42,10 +41,13 @@ class InAppDisplayer: InAppDisplayerProtocol {
      */
     @discardableResult static func showIterableHtmlMessage(_ htmlString: String,
                                                            messageMetadata: IterableInAppMessageMetadata? = nil,
-                                                           backgroundAlpha: Double = 0,
-                                                           padding: UIEdgeInsets = .zero) -> ShowResult {
+                                                           padding: Padding = .zero) -> ShowResult {
+        guard !InAppPresenter.isPresenting else {
+            return .notShown("In-app notification is being presented.")
+        }
+        
         guard let topViewController = getTopViewController() else {
-            return .notShown("No top ViewController.")
+            return .notShown("No top view controller.")
         }
         
         if topViewController is IterableHtmlMessageViewController {
@@ -57,44 +59,16 @@ class InAppDisplayer: InAppDisplayerProtocol {
                                                                       messageMetadata: messageMetadata,
                                                                       isModal: true)
         let createResult = IterableHtmlMessageViewController.create(parameters: parameters)
-        let baseNotification = createResult.viewController
+        let htmlMessageVC = createResult.viewController
         
         topViewController.definesPresentationContext = true
         
-        if #available(iOS 13, *) {
-            baseNotification.view.backgroundColor = UIColor.systemBackground.withAlphaComponent(CGFloat(backgroundAlpha))
-        } else {
-            baseNotification.view.backgroundColor = UIColor.white.withAlphaComponent(CGFloat(backgroundAlpha))
-        }
+        htmlMessageVC.modalPresentationStyle = .overFullScreen
         
-        baseNotification.modalPresentationStyle = .overCurrentContext
-        
-        topViewController.present(baseNotification, animated: false)
+        let presenter = InAppPresenter(topViewController: topViewController, htmlMessageViewController: htmlMessageVC)
+        presenter.show()
         
         return .shown(createResult.futureClickedURL)
-    }
-    
-    // deprecated - will be removed in version 6.3.x or above
-    static func showSystemNotification(withTitle title: String,
-                                       body: String,
-                                       buttonLeft: String?,
-                                       buttonRight: String?,
-                                       callbackBlock: ITEActionBlock?) {
-        guard let topViewController = getTopViewController() else {
-            return
-        }
-        
-        let alertController = UIAlertController(title: title, message: body, preferredStyle: .alert)
-        
-        if let buttonLeft = buttonLeft {
-            addAlertActionButton(alertController: alertController, keyString: buttonLeft, callbackBlock: callbackBlock)
-        }
-        
-        if let buttonRight = buttonRight {
-            addAlertActionButton(alertController: alertController, keyString: buttonRight, callbackBlock: callbackBlock)
-        }
-        
-        topViewController.show(alertController, sender: self)
     }
     
     fileprivate static func isShowingIterableMessage() -> Bool {
@@ -133,25 +107,6 @@ class InAppDisplayer: InAppDisplayerProtocol {
         
         return showIterableHtmlMessage(content.html,
                                        messageMetadata: metadata,
-                                       backgroundAlpha: content.backgroundAlpha,
-                                       padding: content.edgeInsets)
-    }
-    
-    /**
-     Creates and adds an alert action button to an alertController
-     
-     - parameter alertController:  The alert controller to add the button to
-     - parameter keyString:        the text of the button
-     - parameter callbackBlock:    the callback to send after a button on the notification is clicked
-     
-     - remarks:            passes the string of the button clicked to the callbackBlock
-     */
-    private static func addAlertActionButton(alertController: UIAlertController, keyString: String, callbackBlock: ITEActionBlock?) {
-        let button = UIAlertAction(title: keyString, style: .default) { _ in
-            alertController.dismiss(animated: false)
-            callbackBlock?(keyString)
-        }
-        
-        alertController.addAction(button)
+                                       padding: content.padding)
     }
 }

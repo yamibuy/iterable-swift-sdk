@@ -1,13 +1,12 @@
 //
-//  Created by Tapash Majumder on 1/8/19.
 //  Copyright © 2019 Iterable. All rights reserved.
 //
 
 import Foundation
 import UIKit
 
-// This is needed because String(describing: ...) returns wrong
-// value for this enum when it is exposed to Objective C
+/// This is needed because String(describing: ...) returns the
+/// wrong value for this enum when it is exposed to Objective-C
 extension IterableInAppContentType: CustomStringConvertible {
     public var description: String {
         switch self {
@@ -36,8 +35,8 @@ extension IterableInAppContentType {
     }
 }
 
-// This is needed because String(describing: ...) returns wrong
-// value for this enum when it is exposed to Objective C
+/// This is needed because String(describing: ...) returns the
+/// wrong value for this enum when it is exposed to Objective-C
 extension IterableInAppTriggerType: CustomStringConvertible {
     public var description: String {
         switch self {
@@ -52,7 +51,6 @@ extension IterableInAppTriggerType: CustomStringConvertible {
 }
 
 extension IterableInAppTriggerType {
-    // Internal
     static func from(string: String) -> IterableInAppTriggerType {
         switch string.lowercased() {
         case String(describing: IterableInAppTriggerType.immediate).lowercased():
@@ -73,15 +71,15 @@ extension IterableInAppTrigger {
     static let neverTrigger = create(withTriggerType: .never)
     
     static func create(withTriggerType triggerType: IterableInAppTriggerType) -> IterableInAppTrigger {
-        return IterableInAppTrigger(dict: createTriggerDict(forTriggerType: triggerType))
+        IterableInAppTrigger(dict: createTriggerDict(forTriggerType: triggerType))
     }
     
     static func createDefaultTriggerDict() -> [AnyHashable: Any] {
-        return createTriggerDict(forTriggerType: .defaultTriggerType)
+        createTriggerDict(forTriggerType: .defaultTriggerType)
     }
     
     static func createTriggerDict(forTriggerType triggerType: IterableInAppTriggerType) -> [AnyHashable: Any] {
-        return [JsonKey.InApp.type: String(describing: triggerType)]
+        [JsonKey.InApp.type: String(describing: triggerType)]
     }
 }
 
@@ -126,38 +124,65 @@ extension IterableInAppTrigger: Codable {
 }
 
 extension IterableHtmlInAppContent: Codable {
+    struct CodableColor: Codable {
+        let r: CGFloat
+        let g: CGFloat
+        let b: CGFloat
+        let a: CGFloat
+        
+        static func uiColorFromCodableColor(_ codableColor: CodableColor) -> UIColor {
+            UIColor(red: codableColor.r, green: codableColor.g, blue: codableColor.b, alpha: codableColor.a)
+        }
+        
+        static func codableColorFromUIColor(_ uiColor: UIColor) -> CodableColor {
+            let (r, g, b, a) = uiColor.rgba
+            return CodableColor(r: r, g: g, b: b, a: a)
+        }
+    }
+
     enum CodingKeys: String, CodingKey {
         case edgeInsets
-        case backgroundAlpha
         case html
+        case shouldAnimate
+        case bgColor // saves codable color, not UIColor
     }
     
     static func htmlContent(from decoder: Decoder) -> IterableHtmlInAppContent {
         guard let container = try? decoder.container(keyedBy: CodingKeys.self) else {
             ITBError("Can not decode, returning default")
             
-            return IterableHtmlInAppContent(edgeInsets: .zero, backgroundAlpha: 0.0, html: "")
+            return IterableHtmlInAppContent(edgeInsets: .zero, html: "")
         }
         
         let edgeInsets = (try? container.decode(UIEdgeInsets.self, forKey: .edgeInsets)) ?? .zero
-        let backgroundAlpha = (try? container.decode(Double.self, forKey: .backgroundAlpha)) ?? 0.0
         let html = (try? container.decode(String.self, forKey: .html)) ?? ""
-        
-        return IterableHtmlInAppContent(edgeInsets: edgeInsets, backgroundAlpha: backgroundAlpha, html: html)
+        let shouldAnimate = (try? container.decode(Bool.self, forKey: .shouldAnimate)) ?? false
+        let backgroundColor = (try? container.decode(CodableColor.self, forKey: .bgColor)).map(CodableColor.uiColorFromCodableColor(_:))
+
+        return IterableHtmlInAppContent(edgeInsets: edgeInsets,
+                                        html: html,
+                                        shouldAnimate: shouldAnimate,
+                                        backgroundColor: backgroundColor)
     }
     
     static func encode(htmlContent: IterableHtmlInAppContent, to encoder: Encoder) {
         var container = encoder.container(keyedBy: CodingKeys.self)
         
         try? container.encode(htmlContent.edgeInsets, forKey: .edgeInsets)
-        try? container.encode(htmlContent.backgroundAlpha, forKey: .backgroundAlpha)
         try? container.encode(htmlContent.html, forKey: .html)
+        try? container.encode(htmlContent.shouldAnimate, forKey: .shouldAnimate)
+        if let backgroundColor = htmlContent.backgroundColor {
+            try? container.encode(CodableColor.codableColorFromUIColor(backgroundColor), forKey: .bgColor)
+        }
     }
     
     public convenience init(from decoder: Decoder) {
         let htmlContent = IterableHtmlInAppContent.htmlContent(from: decoder)
         
-        self.init(edgeInsets: htmlContent.edgeInsets, backgroundAlpha: htmlContent.backgroundAlpha, html: htmlContent.html)
+        self.init(edgeInsets: htmlContent.edgeInsets,
+                  html: htmlContent.html,
+                  shouldAnimate: htmlContent.shouldAnimate,
+                  backgroundColor: htmlContent.backgroundColor)
     }
     
     public func encode(to encoder: Encoder) {
@@ -209,6 +234,7 @@ extension IterableInAppMessage: Codable {
         case read
         case trigger
         case content
+        case priorityLevel
     }
     
     enum ContentCodingKeys: String, CodingKey {
@@ -220,7 +246,7 @@ extension IterableInAppMessage: Codable {
             ITBError("Can not decode, returning default")
             
             self.init(messageId: "",
-                      campaignId: "",
+                      campaignId: 0,
                       content: IterableInAppMessage.createDefaultContent())
             
             return
@@ -229,7 +255,7 @@ extension IterableInAppMessage: Codable {
         let saveToInbox = (try? container.decode(Bool.self, forKey: .saveToInbox)) ?? false
         let inboxMetadata = (try? container.decode(IterableInboxMetadata.self, forKey: .inboxMetadata))
         let messageId = (try? container.decode(String.self, forKey: .messageId)) ?? ""
-        let campaignId = (try? container.decode(String.self, forKey: .campaignId)) ?? ""
+        let campaignId = (try? container.decode(Int.self, forKey: .campaignId)).map { NSNumber(value: $0) }
         let createdAt = (try? container.decode(Date.self, forKey: .createdAt))
         let expiresAt = (try? container.decode(Date.self, forKey: .expiresAt))
         let customPayloadData = try? container.decode(Data.self, forKey: .customPayload)
@@ -240,6 +266,7 @@ extension IterableInAppMessage: Codable {
         
         let trigger = (try? container.decode(IterableInAppTrigger.self, forKey: .trigger)) ?? .undefinedTrigger
         let content = IterableInAppMessage.decodeContent(from: container)
+        let priorityLevel = (try? container.decode(Double.self, forKey: .priorityLevel)) ?? Const.PriorityLevel.unassigned
         
         self.init(messageId: messageId,
                   campaignId: campaignId,
@@ -250,7 +277,8 @@ extension IterableInAppMessage: Codable {
                   saveToInbox: saveToInbox,
                   inboxMetadata: inboxMetadata,
                   customPayload: customPayload,
-                  read: read)
+                  read: read,
+                  priorityLevel: priorityLevel)
         
         self.didProcessTrigger = didProcessTrigger
         self.consumed = consumed
@@ -262,13 +290,14 @@ extension IterableInAppMessage: Codable {
         try? container.encode(trigger, forKey: .trigger)
         try? container.encode(saveToInbox, forKey: .saveToInbox)
         try? container.encode(messageId, forKey: .messageId)
-        try? container.encode(campaignId, forKey: .campaignId)
+        try? container.encode(campaignId as? Int, forKey: .campaignId)
         try? container.encode(createdAt, forKey: .createdAt)
         try? container.encode(expiresAt, forKey: .expiresAt)
         try? container.encode(IterableInAppMessage.serialize(customPayload: customPayload), forKey: .customPayload)
         try? container.encode(didProcessTrigger, forKey: .didProcessTrigger)
         try? container.encode(consumed, forKey: .consumed)
         try? container.encode(read, forKey: .read)
+        try? container.encode(priorityLevel, forKey: .priorityLevel)
         
         if let inboxMetadata = inboxMetadata {
             try? container.encode(inboxMetadata, forKey: .inboxMetadata)
@@ -278,7 +307,7 @@ extension IterableInAppMessage: Codable {
     }
     
     private static func createDefaultContent() -> IterableInAppContent {
-        return IterableHtmlInAppContent(edgeInsets: .zero, backgroundAlpha: 0.0, html: "")
+        IterableHtmlInAppContent(edgeInsets: .zero, html: "")
     }
     
     private static func serialize(customPayload: [AnyHashable: Any]?) -> Data? {
@@ -366,7 +395,6 @@ class InAppFilePersister: InAppPersistenceProtocol {
     private let ext: String
 }
 
-// Files Utility class
 struct FileHelper {
     static func getUrl(filename: String, ext: String) -> URL? {
         guard let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {

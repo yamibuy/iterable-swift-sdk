@@ -1,5 +1,4 @@
 //
-//  Created by Tapash Majumder on 9/7/18.
 //  Copyright © 2018 Iterable. All rights reserved.
 //
 
@@ -8,41 +7,63 @@ import UIKit
 
 extension Array {
     func take(_ size: Int) -> [[Element]] {
-        return stride(from: 0, to: count, by: size).map {
+        stride(from: 0, to: count, by: size).map {
             Array(self[$0 ..< Swift.min($0 + size, count)])
         }
     }
 }
 
+extension Array where Element: Comparable {
+    func isAscending() -> Bool {
+        return zip(self, self.dropFirst()).allSatisfy(<=)
+    }
+
+    func isDescending() -> Bool {
+        return zip(self, self.dropFirst()).allSatisfy(>=)
+    }
+}
+
 extension Dictionary where Key == AnyHashable, Value == Any {
-    func getValue(for key: JsonKey) -> Any? {
-        return self[key.jsonKey]
+    func getStringValue(for key: AnyHashable, withDefault default: String? = nil) -> String? {
+        self[key] as? String ?? `default`
     }
-    
-    func getStringValue(for key: JsonKey, withDefault default: String? = nil) -> String? {
-        return getValue(for: key) as? String ?? `default`
+
+    func getIntValue(for key: AnyHashable) -> Int? {
+        self[key] as? Int
     }
-    
-    func getIntValue(for key: JsonKey) -> Int? {
-        return getValue(for: key) as? Int
+
+    func getDoubleValue(for key: AnyHashable) -> Double? {
+        self[key] as? Double
     }
-    
-    func getBoolValue(for key: JsonKey) -> Bool? {
-        return getValue(for: key) as? Bool
+
+    func getBoolValue(for key: AnyHashable) -> Bool? {
+        self[key].flatMap ( Self.parseBool(_:) )
     }
-    
-    mutating func setValue(for key: JsonKey, value: JsonValueRepresentable?) {
-        self[key.jsonKey] = value?.jsonValue
+
+    mutating func setValue(for key: AnyHashable, value: JsonValueRepresentable?) {
+        self[key] = value?.jsonValue
     }
-    
-    mutating func setValue(for key: JsonKeyRepresentable, value: JsonValueRepresentable?) {
-        self[key.jsonKey] = value?.jsonValue
+
+    private static func parseBool(_ any: Any?) -> Bool? {
+        guard let any = any else {
+            return nil
+        }
+        
+        if let bool = any as? Bool {
+            return bool
+        } else if let number = any as? NSNumber {
+            return number.boolValue
+        } else if let string = any as? String {
+            return Int(string).map(NSNumber.init).map { $0.boolValue }
+        } else {
+            return nil
+        }
     }
 }
 
 extension Bundle {
     var appPackageName: String? {
-        return bundleIdentifier
+        bundleIdentifier
     }
     
     var appVersion: String? {
@@ -73,7 +94,7 @@ extension Encodable {
 }
 
 extension UIColor {
-    convenience init?(hex: String) {
+    convenience init?(hex: String, alpha: CGFloat = 1.0) {
         guard let int = Int(hex, radix: 16) else {
             return nil
         }
@@ -82,13 +103,23 @@ extension UIColor {
         let g = Float((int & 0x00FF00) >> 8) / 255.0
         let b = Float((int & 0x0000FF) >> 0) / 255.0
         
-        self.init(red: CGFloat(r), green: CGFloat(g), blue: CGFloat(b), alpha: 1.0)
+        self.init(red: CGFloat(r), green: CGFloat(g), blue: CGFloat(b), alpha: alpha)
+    }
+
+    var rgba: (red: CGFloat, green: CGFloat, blue: CGFloat, alpha: CGFloat) {
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        
+        return (red, green, blue, alpha)
     }
 }
 
 extension Data {
     func hexString() -> String {
-        return map { String(format: "%02.2hhx", $0) }.joined()
+        map { String(format: "%02.2hhx", $0) }.joined()
     }
 }
 

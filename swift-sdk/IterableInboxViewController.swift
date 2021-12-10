@@ -1,61 +1,8 @@
 //
-//  Created by Tapash Majumder on 4/11/19.
 //  Copyright © 2019 Iterable. All rights reserved.
 //
 
 import UIKit
-
-/// Use this protocol to override the default inbox display behavior.
-/// Please note that almost properties are `optional` which means that you don't have to
-/// implement them if the default behavior works for you.
-@objc public protocol IterableInboxViewControllerViewDelegate: AnyObject {
-    /// View delegate must have a public `required` initializer.
-    @objc init()
-    
-    /// By default, all messages are shown.
-    /// If you want to control which messages are to be shown, return a filter here.
-    /// You can see an example of how to set a custom filter in our `inbox-customization` sample app.
-    @objc optional var filter: (IterableInAppMessage) -> Bool { get }
-    
-    /// By default, messages are sorted chronologically.
-    /// If you don't want inbox messages to be sorted chronologically, return a relevant comparator here.
-    /// For example, if you want the latest messages to be displayed you can do so by setting
-    /// `comparator = IterableInboxViewController.DefaultComparator.descending`,
-    /// You may also return any other custom comparator as per your need.
-    @objc optional var comparator: (IterableInAppMessage, IterableInAppMessage) -> Bool { get }
-    
-    /// If you want to have multiple sections for your inbox, use a mapper which returns the section number for an inbox message.
-    /// Please note that there is no need to worry about actual section numbers, section numbers are *relative*, not absolute.
-    /// As long as all messages in a section are mapped to the same number things will be fine.
-    /// For example, your mapper can return `4` for message1 and message2 and `5` for message3. In this case message1 and message2 will be in section 0
-    /// and message3 will be in section 1 eventhough the mappings are for `4` and `5`.
-    /// You can see an example of how to set a custom section mapper in our `inbox-customization` sample app.
-    @objc optional var messageToSectionMapper: (IterableInAppMessage) -> Int { get }
-    
-    /// By default message creation time is shown as medium date and short time.
-    /// Use this method to override the default display for message creation time.
-    /// Return nil if you don't want to display time.
-    /// For example, set `dateMapper = IterableInboxViewController.DefaultDateMapper.localizedShortDateShortTime`
-    /// if you want show short date and time.
-    @objc optional var dateMapper: (IterableInAppMessage) -> String? { get }
-    
-    /// Use this property only when you have more than one type of custom table view cells.
-    /// For example, if you have inbox cells of one type to show  informational mesages,
-    /// and inbox cells of another type to show discount messages.
-    /// Please note that you must declare all custom nib names here.
-    /// - returns: a list of all custom nib names.
-    @objc optional var customNibNames: [String] { get }
-    
-    /// A mapper that maps an inbox message to a custom nib.
-    /// This goes hand in hand with `customNibNames` property above.
-    /// You can see an example of how to set a custom nib name mapper in our `inbox-customization` sample app.
-    @objc optional var customNibNameMapper: (IterableInAppMessage) -> String? { get }
-    
-    /// Use this method to render any additional custom fields other than title, subtitle and createAt.
-    /// - parameter forCell: The table view cell to render
-    /// - parameter withMessage: IterableInAppMessage
-    @objc optional func renderAdditionalFields(forCell cell: IterableInboxCell, withMessage message: IterableInAppMessage)
-}
 
 @IBDesignable
 open class IterableInboxViewController: UITableViewController {
@@ -111,6 +58,23 @@ open class IterableInboxViewController: UITableViewController {
         }
     }
     
+    /// We default, we don't show any message when inbox is empty.
+    /// If you want to show a message, such as, "There are no messages", you will
+    /// have to set the `noMessagesTitle` and  `noMessagesBody` properties below.
+
+    /// Use this to set the title to show when there are no message in the inbox.
+    @IBInspectable public var noMessagesTitle: String? = nil
+
+    /// Use this to set the message to show when there are no message in the inbox.
+    @IBInspectable public var noMessagesBody: String? = nil
+    
+    /// If `true`, the inbox badge will show a number when there are any unread messages in the inbox.
+    /// If `false` it will simply show an indicator if there are any unread messages in the inbox.
+    @IBInspectable public var showCountInUnreadBadge: Bool = true
+    
+    /// when in popup mode, specify here if you'd like to change the presentation style
+    public var popupModalPresentationStyle: UIModalPresentationStyle? = nil
+    
     /// Set this property to override default inbox display behavior. You should set either this property
     /// or `viewDelegateClassName`property but not both.
     public var viewDelegate: IterableInboxViewControllerViewDelegate? {
@@ -143,7 +107,7 @@ open class IterableInboxViewController: UITableViewController {
     
     // MARK: Initializers
     
-    public override init(style: UITableView.Style) {
+    override public init(style: UITableView.Style) {
         ITBInfo()
         viewModel = InboxViewControllerViewModel()
         super.init(style: style)
@@ -157,15 +121,15 @@ open class IterableInboxViewController: UITableViewController {
         viewModel.view = self
     }
     
-    public override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
+    override public init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         ITBInfo()
         viewModel = InboxViewControllerViewModel()
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
         viewModel.view = self
     }
     
-    open override func viewDidLoad() {
-        ITBInfo()
+    override open func viewDidLoad() {
+        ITBDebug()
         
         super.viewDidLoad()
         
@@ -183,8 +147,8 @@ open class IterableInboxViewController: UITableViewController {
         cellLoader.registerCells(forTableView: tableView)
     }
     
-    open override func viewWillAppear(_ animated: Bool) {
-        ITBInfo()
+    override open func viewWillAppear(_ animated: Bool) {
+        ITBDebug()
         
         super.viewWillAppear(animated)
         
@@ -201,8 +165,8 @@ open class IterableInboxViewController: UITableViewController {
         }
     }
     
-    open override func viewWillDisappear(_ animated: Bool) {
-        ITBInfo()
+    override open func viewWillDisappear(_ animated: Bool) {
+        ITBDebug()
         
         super.viewWillDisappear(animated)
         
@@ -215,11 +179,11 @@ open class IterableInboxViewController: UITableViewController {
     
     // MARK: - UITableViewDataSource (Required Functions)
     
-    open override func tableView(_: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return viewModel.numRows(in: section)
+    override open func tableView(_: UITableView, numberOfRowsInSection section: Int) -> Int {
+        viewModel.numRows(in: section)
     }
     
-    open override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+    override open func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let message = viewModel.message(atIndexPath: indexPath)
         let cell = cellLoader.loadCell(for: message.iterableMessage, forTableView: tableView, atIndexPath: indexPath)
         
@@ -230,15 +194,22 @@ open class IterableInboxViewController: UITableViewController {
     
     // MARK: - UITableViewDataSource (Optional Functions)
     
-    open override func numberOfSections(in _: UITableView) -> Int {
+    override open func numberOfSections(in _: UITableView) -> Int {
+        if noMessagesTitle != nil || noMessagesBody != nil {
+            if viewModel.isEmpty() {
+                tableView.setEmptyView(title: noMessagesTitle, message: noMessagesBody)
+            } else {
+                tableView.restore()
+            }
+        }
         return viewModel.numSections
     }
     
-    open override func tableView(_: UITableView, canEditRowAt _: IndexPath) -> Bool {
-        return true
+    override open func tableView(_: UITableView, canEditRowAt _: IndexPath) -> Bool {
+        true
     }
     
-    open override func tableView(_: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+    override open func tableView(_: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         if editingStyle == .delete {
             viewModel.remove(atIndexPath: indexPath)
         }
@@ -246,7 +217,7 @@ open class IterableInboxViewController: UITableViewController {
     
     // MARK: - UITableViewDelegate (Optional Functions)
     
-    open override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+    override open func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         if inboxMode == .popup {
             tableView.deselectRow(at: indexPath, animated: true)
         }
@@ -255,6 +226,7 @@ open class IterableInboxViewController: UITableViewController {
         
         if let viewController = viewModel.createInboxMessageViewController(for: message, withInboxMode: inboxMode) {
             viewModel.set(read: true, forMessage: message)
+            
             if inboxMode == .nav {
                 navigationController?.pushViewController(viewController, animated: true)
             } else {
@@ -267,7 +239,7 @@ open class IterableInboxViewController: UITableViewController {
     
     // MARK: - UIScrollViewDelegate (Optional Functions)
     
-    open override func scrollViewDidScroll(_: UIScrollView) {
+    override open func scrollViewDidScroll(_: UIScrollView) {
         ITBDebug()
         
         viewModel.visibleRowsChanged()
@@ -376,11 +348,15 @@ open class IterableInboxViewController: UITableViewController {
             viewController.modalPresentationStyle = .overFullScreen
             return
         }
+        
+        if let modalPresentationStyle = popupModalPresentationStyle {
+            viewController.modalPresentationStyle = modalPresentationStyle
+        }
     }
 }
 
 extension IterableInboxViewController: InboxViewControllerViewModelView {
-    func onViewModelChanged(diff: [SectionedDiffStep<Int, InboxMessageViewModel>]) {
+    func onViewModelChanged(diffs: [RowDiff]) {
         ITBInfo()
         
         guard Thread.isMainThread else {
@@ -388,7 +364,7 @@ extension IterableInboxViewController: InboxViewControllerViewModelView {
             return
         }
         
-        updateTableView(diff: diff)
+        updateTableView(diffs: diffs)
         updateUnreadBadgeCount()
     }
     
@@ -403,37 +379,44 @@ extension IterableInboxViewController: InboxViewControllerViewModelView {
     }
     
     var currentlyVisibleRowIndexPaths: [IndexPath] {
-        return tableView.indexPathsForVisibleRows?.compactMap(isRowVisible(atIndexPath:)) ?? []
+        tableView.indexPathsForVisibleRows?.compactMap(isRowVisible(atIndexPath:)) ?? []
     }
     
     private func updateUnreadBadgeCount() {
         let unreadCount = viewModel.unreadCount
-        let badgeValue = unreadCount == 0 ? nil : "\(unreadCount)"
-        navigationController?.tabBarItem?.badgeValue = badgeValue
+        let badgeUnreadCount = unreadCount == 0 ? nil : "\(unreadCount)"
+        
+        if showCountInUnreadBadge {
+            navigationController?.tabBarItem?.badgeValue = badgeUnreadCount
+        } else {
+            navigationController?.tabBarItem?.badgeValue = nil
+        }
     }
     
-    private func updateTableView(diff: [SectionedDiffStep<Int, InboxMessageViewModel>]) {
+    private func updateTableView(diffs: [RowDiff]) {
         tableView.beginUpdates()
         viewModel.beganUpdates()
         
-        for result in diff {
-            switch result {
-            case let .delete(section, row, _): tableView.deleteRows(at: [IndexPath(row: row, section: section)], with: deletionAnimation)
-            case let .insert(section, row, _): tableView.insertRows(at: [IndexPath(row: row, section: section)], with: insertionAnimation)
-            case let .sectionDelete(section, _): tableView.deleteSections(IndexSet(integer: section), with: deletionAnimation)
-            case let .sectionInsert(section, _): tableView.insertSections(IndexSet(integer: section), with: insertionAnimation)
+        for diff in diffs {
+            switch diff {
+            case .delete(let indexPath): tableView.deleteRows(at: [indexPath], with: deletionAnimation)
+            case .insert(let indexPath): tableView.insertRows(at: [indexPath], with: insertionAnimation)
+            case .update(let indexPath): tableView.reloadRows(at: [indexPath], with: .automatic)
+            case .sectionDelete(let indexSet): tableView.deleteSections(indexSet, with: deletionAnimation)
+            case .sectionInsert(let indexSet): tableView.insertSections(indexSet, with: insertionAnimation)
+            case .sectionUpdate(let indexSet): tableView.reloadSections(indexSet, with: .automatic)
             }
         }
-        
+
         tableView.endUpdates()
         viewModel.endedUpdates()
     }
-    
+
     private func isRowVisible(atIndexPath indexPath: IndexPath) -> IndexPath? {
         let topMargin = CGFloat(10.0)
         let bottomMargin = CGFloat(10.0)
         let frame = tableView.frame
-        let statusHeight = UIApplication.shared.statusBarFrame.height
+        let statusHeight = AppExtensionHelper.application?.statusBarFrame.height ?? 0
         let navHeight = navigationController?.navigationBar.frame.height ?? 0
         let topHeightToSubtract = statusHeight + navHeight - topMargin // subtract topMargin
         
@@ -506,7 +489,8 @@ private struct CellLoader {
                 let nib = UINib(nibName: cellNibName, bundle: Bundle.main)
                 tableView.register(nib, forCellReuseIdentifier: defaultCellReuseIdentifier)
             } else {
-                fatalError("Cannot find nib: \(cellNibName) in main bundle.")
+                ITBError("Cannot find nib: \(cellNibName) in main bundle. Using default.")
+                tableView.register(IterableInboxCell.self, forCellReuseIdentifier: defaultCellReuseIdentifier)
             }
         } else {
             tableView.register(IterableInboxCell.self, forCellReuseIdentifier: defaultCellReuseIdentifier)
@@ -527,5 +511,53 @@ private struct CellLoader {
         }
         
         return cell
+    }
+}
+
+extension UITableView {
+    func setEmptyView(title: String?, message: String?) {
+        let emptyView = UIView(frame: self.bounds)
+        let titleLabel: UILabel?
+        if let title = title {
+            titleLabel = UILabel()
+            emptyView.addSubview(titleLabel!)
+            titleLabel?.translatesAutoresizingMaskIntoConstraints = false
+            titleLabel?.textAlignment = .center
+            titleLabel?.textColor = .iterableLabel
+            titleLabel?.font = UIFont(name: "HelveticaNeue-Bold", size: 20)
+            titleLabel?.text = title
+            titleLabel?.widthAnchor.constraint(equalTo: emptyView.widthAnchor, multiplier: 1.0, constant: -20).isActive = true
+            titleLabel?.centerXAnchor.constraint(equalTo: emptyView.centerXAnchor).isActive = true
+            titleLabel?.centerYAnchor.constraint(equalTo: emptyView.centerYAnchor).isActive = true
+        } else {
+            titleLabel = nil
+        }
+
+        if let message = message {
+            let messageLabel = UILabel()
+            emptyView.addSubview(messageLabel)
+            messageLabel.translatesAutoresizingMaskIntoConstraints = false
+            messageLabel.textColor = .iterableSecondaryLabel
+            messageLabel.font = UIFont(name: "HelveticaNeue-Regular", size: 18)
+            messageLabel.text = message
+            messageLabel.numberOfLines = 0
+            messageLabel.textAlignment = .center
+
+            messageLabel.centerXAnchor.constraint(equalTo: emptyView.centerXAnchor).isActive = true
+            messageLabel.widthAnchor.constraint(equalTo: emptyView.widthAnchor, multiplier: 1.0, constant: -20).isActive = true
+            if let titleLabel = titleLabel {
+                messageLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 25).isActive = true
+            } else {
+                messageLabel.centerYAnchor.constraint(equalTo: emptyView.centerYAnchor).isActive = true
+            }
+        }
+
+        self.backgroundView = emptyView
+        self.separatorStyle = .none
+    }
+    
+    func restore() {
+        self.backgroundView = nil
+        self.separatorStyle = .singleLine
     }
 }
