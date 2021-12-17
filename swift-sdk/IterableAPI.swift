@@ -169,7 +169,7 @@ public final class IterableAPI: NSObject {
   
     /// 解析url并返回 方法实现大部分同 func handle(universalLink url: URL)
     @discardableResult
-    public static func handle1(link url: URL,urlResolvedCallBack:@escaping (_ resolvedUrl:String)->()) -> Bool{
+    public static func getAndTrack(link url: URL,urlResolvedCallBack:@escaping (_ resolvedUrl:String)->()) -> Bool{
       if let internalImplementation = internalImplementation {
         return internalImplementation.getAndTrack(url, urlResolvedCallBack: urlResolvedCallBack)
       }
