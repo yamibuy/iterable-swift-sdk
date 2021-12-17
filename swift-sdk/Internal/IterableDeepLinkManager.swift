@@ -24,8 +24,12 @@ class IterableDeepLinkManager: NSObject {
                     
                     IterableActionRunner.execute(action: action,
                                                  context: context,
-                                                 urlHandler: IterableUtil.urlHandler(fromUrlDelegate: urlDelegate,
-                                                                                     inContext: context),
+//<<<<<<< HEAD
+//                                                 urlHandler: IterableUtil.urlHandler(fromUrlDelegate: urlDelegate,
+//                                                                                     inContext: context),
+//=======
+                                                 urlHandler: IterableUtil.urlHandler(fromUrlDelegate: urlDelegate, inContext: context,fromNotification: false),
+//>>>>>>> falcon
                                                  urlOpener: urlOpener)
                 }
                 
@@ -37,14 +41,21 @@ class IterableDeepLinkManager: NSObject {
         } else {
             if let action = IterableAction.actionOpenUrl(fromUrlString: url.absoluteString) {
                 let context = IterableActionContext(action: action, source: .universalLink)
+//<<<<<<< HEAD
                 
                 let result = IterableActionRunner.execute(action: action,
                                                           context: context,
                                                           urlHandler: IterableUtil.urlHandler(fromUrlDelegate: urlDelegate,
-                                                                                              inContext: context),
+                                                                                              inContext: context,fromNotification: false),
                                                           urlOpener: urlOpener)
                 
                 return (result, Promise<IterableAttributionInfo?, Error>(value: nil))
+//=======
+//                return IterableActionRunner.execute(action: action,
+//                                                    context: context,
+//                                                    urlHandler: IterableUtil.urlHandler(fromUrlDelegate: urlDelegate, inContext: context,fromNotification: false),
+//                                                    urlOpener: urlOpener)
+//>>>>>>> falcon
             } else {
                 return (false, Promise<IterableAttributionInfo?, Error>(value: nil))
             }

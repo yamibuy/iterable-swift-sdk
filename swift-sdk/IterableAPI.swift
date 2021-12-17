@@ -44,15 +44,22 @@ public final class IterableAPI: NSObject {
     
     // MARK: - Initialization
     
+//<<<<<<< HEAD
     /// An SDK initializer taking in the Iterable Mobile API key to be utilized, and using default SDK settings
     ///
     /// - Parameters:
     ///     - apiKey: The Iterable Mobile API key to be used with the SDK
     ///
     /// - SeeAlso: IterableConfig
-    @available(iOSApplicationExtension, unavailable)
-    public static func initialize(apiKey: String) {
-        initialize(apiKey: apiKey, launchOptions: nil)
+//    @available(iOSApplicationExtension, unavailable)
+//    public static func initialize(apiKey: String) {
+//        initialize(apiKey: apiKey, launchOptions: nil)
+//=======
+//    /// You should call this method and not call the init method directly.
+//    /// - parameter apiKey: Iterable API Key.
+    public static func initialize(apiKey: String,inAppMessageFetchDelaySeconds:Int) {
+        initialize(apiKey: apiKey, launchOptions: nil,inAppMessageFetchDelaySeconds:inAppMessageFetchDelaySeconds)
+//>>>>>>> falcon
     }
     
     /// An SDK initializer taking in the Iterable Mobile API key to be utilized, and a config object for the
@@ -65,8 +72,8 @@ public final class IterableAPI: NSObject {
     /// - SeeAlso: IterableConfig
     @available(iOSApplicationExtension, unavailable)
     public static func initialize(apiKey: String,
-                                  config: IterableConfig) {
-        initialize(apiKey: apiKey, launchOptions: nil, config: config)
+                                  config: IterableConfig,inAppMessageFetchDelaySeconds:Int) {
+       initialize(apiKey: apiKey, launchOptions: nil, config: config,inAppMessageFetchDelaySeconds:inAppMessageFetchDelaySeconds)
     }
     
     /// An SDK initializer taking in the Iterable Mobile API key to be utilized and the
@@ -79,8 +86,8 @@ public final class IterableAPI: NSObject {
     /// - SeeAlso: IterableConfig
     @available(iOSApplicationExtension, unavailable)
     public static func initialize(apiKey: String,
-                                  launchOptions: [UIApplication.LaunchOptionsKey: Any]?) {
-        initialize(apiKey: apiKey, launchOptions: launchOptions, config: IterableConfig())
+                                  launchOptions: [UIApplication.LaunchOptionsKey: Any]?,inAppMessageFetchDelaySeconds:Int) {
+       initialize(apiKey: apiKey, launchOptions: launchOptions, config: IterableConfig(),inAppMessageFetchDelaySeconds:inAppMessageFetchDelaySeconds)
     }
     
     /// An SDK initializer taking in the Iterable Mobile API key to be utilized as well as the
@@ -95,10 +102,25 @@ public final class IterableAPI: NSObject {
     @available(iOSApplicationExtension, unavailable)
     public static func initialize(apiKey: String,
                                   launchOptions: [UIApplication.LaunchOptionsKey: Any]?,
-                                  config: IterableConfig = IterableConfig()) {
-        initialize2(apiKey: apiKey,
-                    launchOptions: launchOptions,
-                    config: config)
+//<<<<<<< HEAD
+//                                  config: IterableConfig = IterableConfig()) {
+//        initialize2(apiKey: apiKey,
+//                    launchOptions: launchOptions,
+//                    config: config)
+//=======
+                                  config: IterableConfig = IterableConfig(),
+                                  inAppMessageFetchDelaySeconds:Int) {
+      
+//        internalImplementation = IterableAPIInternal(apiKey: apiKey, launchOptions: launchOptions, config: config)
+//        _ = internalImplementation?.start(inAppMessageFetchDelaySeconds:inAppMessageFetchDelaySeconds)
+//>>>>>>> falcon
+                                    
+                                    initialize2(apiKey: apiKey,
+                                                launchOptions: launchOptions,
+                                                config: config,inAppMessageFetchDelaySeconds: inAppMessageFetchDelaySeconds)
+                                    
+                                    
+                                    
     }
 
     /// DO NOT USE THIS.
@@ -107,6 +129,7 @@ public final class IterableAPI: NSObject {
     public static func initialize2(apiKey: String,
                                    launchOptions: [UIApplication.LaunchOptionsKey: Any]?,
                                    config: IterableConfig = IterableConfig(),
+                                   inAppMessageFetchDelaySeconds:Int,
                                    apiEndPointOverride: String? = nil,
                                    callback: ((Bool) -> Void)? = nil) {
         AppExtensionHelper.initialize()
@@ -114,7 +137,7 @@ public final class IterableAPI: NSObject {
                                                      launchOptions: launchOptions,
                                                      config: config,
                                                      apiEndPointOverride: apiEndPointOverride)
-        _ = internalImplementation?.start().onSuccess { _ in
+        _ = internalImplementation?.start(inAppMessageFetchDelaySeconds: inAppMessageFetchDelaySeconds).onSuccess { _ in
             callback?(true)
         }.onError { _ in
             callback?(false)
@@ -654,9 +677,41 @@ public final class IterableAPI: NSObject {
         internalImplementation?.track(inboxSession: inboxSession)
     }
     
-    // MARK: - Private/Internal
+//<<<<<<< HEAD
+//    // MARK: - Private/Internal
+//=======
+//    /// Use this property for getting and showing in-app messages.
+//    /// This property has no meaning if IterableAPI has not been initialized using
+//    /// IterableAPI.initialize
+//    /// ```
+//    /// - IterableAPI.inAppManager.getMessages()
+//    /// - IterableAPI.inAppManager.show(message: message, consume: true)
+//    /// ```
+//    public static var inAppManager: IterableInAppManagerProtocol {
+//        guard let internalImplementation = internalImplementation else {
+//            ITBError("IterableAPI is not initialized yet. In-apps will not work now.")
+//            assertionFailure("IterableAPI is not initialized yet. In-apps will not work now.")
+//            return EmptyInAppManager()
+//        }
+//
+//        return internalImplementation.inAppManager
+//    }
+  
+    //MARK: InAppWebviewUIDelegate
+    static public func setInAppWebviewUIDelegate(_ delegte:IterableInAppWebViewDelegate){
+      internalImplementation?.inAppWebviewUIDelegate = delegte
+    }
+//>>>>>>> falcon
     
     static var internalImplementation: InternalIterableAPI?
     
     override private init() { super.init() }
+}
+
+
+public extension IterableAPI{
+  /// 可以正常展示消息了
+  static func messageCanBeShownNow(){
+    (internalImplementation?.inAppManager as? InAppManager)?.scheduleNextInAppMessage(checkTimeInterval: false)
+  }
 }

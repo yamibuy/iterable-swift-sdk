@@ -70,9 +70,15 @@ import UIKit
     // MARK: Helper Utility Functions
     
     // converts from IterableURLDelegate to UrlHandler
-    static func urlHandler(fromUrlDelegate urlDelegate: IterableURLDelegate?, inContext context: IterableActionContext) -> UrlHandler {
-        { url in
-            urlDelegate?.handle(iterableURL: url, inContext: context) == true
+//<<<<<<< HEAD
+//    static func urlHandler(fromUrlDelegate urlDelegate: IterableURLDelegate?, inContext context: IterableActionContext) -> UrlHandler {
+//        { url in
+//            urlDelegate?.handle(iterableURL: url, inContext: context) == true
+//=======
+    static func urlHandler(fromUrlDelegate urlDelegate: IterableURLDelegate?, inContext context: IterableActionContext,fromNotification:Bool) -> UrlHandler {
+        return { url in
+            urlDelegate?.handle(iterableURL: url, inContext: context,fromNotification:fromNotification) == true
+//>>>>>>> falcon
         }
     }
     

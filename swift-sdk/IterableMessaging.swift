@@ -11,6 +11,7 @@ import UIKit
 @objc public enum InAppShowResponse: Int {
     case show
     case skip
+    case next
 }
 
 /// Iterable Notification names
@@ -20,14 +21,19 @@ public extension Notification.Name {
 }
 
 @objcMembers open class DefaultInAppDelegate: IterableInAppDelegate {
+ 
     public init() {}
-    
     /// By default, every single in-app will be shown as soon as it is available.
     /// If more than 1 in-app is available, we show the first showable one.
     open func onNew(message _: IterableInAppMessage) -> InAppShowResponse {
         ITBInfo()
         return .show
     }
+  
+    public func messageCanShowNow() -> Bool {
+       return true
+    }
+  
 }
 
 @objc public enum IterableInAppContentType: Int, Codable {

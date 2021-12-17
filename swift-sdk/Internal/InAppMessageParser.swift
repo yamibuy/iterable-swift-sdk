@@ -95,8 +95,24 @@ struct InAppMessageParser {
         }
         
         let campaignId = json[JsonKey.campaignId] as? NSNumber
-        
         let saveToInbox = json[JsonKey.saveToInbox] as? Bool ?? false
+//      逻辑需校验
+/*
+<<<<<<< HEAD
+        let saveToInbox = json[JsonKey.saveToInbox] as? Bool ?? false
+=======
+        if let theCampaignId = json[JsonKey.campaignId.jsonKey] as? String {
+            campaignId = theCampaignId
+        }else if let theCampaignId = json[JsonKey.campaignId.jsonKey] as? Int {
+            campaignId = "\(theCampaignId)"
+        }else {
+            ITBDebug("Could not find campaignId") // This is debug level because this happens a lot with proof in-apps
+            campaignId = ""
+        }
+        
+        let saveToInbox = json[JsonKey.saveToInbox.jsonKey] as? Bool ?? false
+>>>>>>> falcon
+ */
         let inboxMetadata = parseInboxMetadata(fromPayload: json)
         let trigger = parseTrigger(fromTriggerElement: json[JsonKey.InApp.trigger] as? [AnyHashable: Any])
         let customPayload = parseCustomPayload(fromPayload: json)

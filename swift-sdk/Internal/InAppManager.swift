@@ -211,6 +211,7 @@ class InAppManager: NSObject, IterableInternalInAppManagerProtocol {
         }
     }
     
+//<<<<<<< HEAD
     private func synchronize(appIsReady: Bool) -> Future<Bool, Error> {
         ITBInfo()
         
@@ -221,11 +222,25 @@ class InAppManager: NSObject, IterableInternalInAppManagerProtocol {
             .map { [weak self] in
                 self?.processMergedMessages(appIsReady: appIsReady, mergeMessagesResult: $0) ?? true
             }
+//=======
+//    private func synchronize(appIsActive: Bool) -> Future<Bool, Error> {
+//      ITBInfo()
+//
+//
+//      return fetcher.fetch().map{ self.mergeMessages($0)}.map { self.processMergedMessages(appIsActive: appIsReady, mergeMessagesResult: $0) }
+//
+//>>>>>>> falcon
     }
     
     /// `messages` are new messages coming from the server
     private func mergeMessages(_ messages: [IterableInAppMessage]) -> MergeMessagesResult {
-        MessagesObtainedHandler(messagesMap: messagesMap, messages: messages).handle()
+//<<<<<<< HEAD
+//       return MessagesObtainedHandler(messagesMap: messagesMap, messages: messages).handle()
+//=======
+//
+       var messagesObtainedHandler = MessagesObtainedHandler(messagesMap: messagesMap, messages: messages)
+       return messagesObtainedHandler.handle()
+//>>>>>>> falcon
     }
     
     private func processMergedMessages(appIsReady: Bool, mergeMessagesResult: MergeMessagesResult) -> Bool {
@@ -246,6 +261,8 @@ class InAppManager: NSObject, IterableInternalInAppManagerProtocol {
         
         return true
     }
+  
+    
     
     private func finishSync(inboxChanged: Bool) {
         ITBInfo()
@@ -281,6 +298,14 @@ class InAppManager: NSObject, IterableInternalInAppManagerProtocol {
     
     private func processAndShowMessage(messagesMap: OrderedDictionary<String, IterableInAppMessage>) {
         var processor = MessagesProcessor(inAppDelegate: inAppDelegate, inAppDisplayChecker: self, messagesMap: messagesMap)
+      
+        processor.messageSkippedHandler = { [weak self] message in
+//           self?.apiClient?.inAppConsume(messageId: message.messageId)
+          self?.requestHandler?.inAppConsume(message.messageId, onSuccess: nil,
+                                             onFailure: nil)
+
+        }
+
         let messagesProcessorResult = processor.processMessages()
         self.messagesMap = getMessagesMap(fromMessagesProcessorResult: messagesProcessorResult)
         
@@ -332,13 +357,15 @@ class InAppManager: NSObject, IterableInternalInAppManagerProtocol {
         }
     }
     
+
     // This method schedules next triggered message after showing a message
-    private func scheduleNextInAppMessage() {
-        ITBDebug()
-        
+    func scheduleNextInAppMessage(checkTimeInterval:Bool = true) {
+      ITBDebug()
+      if checkTimeInterval{
         let waitTimeInterval = getInAppShowingWaitTimeInterval()
         
         if waitTimeInterval > 0 {
+//<<<<<<< HEAD
             ITBDebug("Need to wait for: \(waitTimeInterval)")
             scheduleQueue.asyncAfter(deadline: .now() + waitTimeInterval) { [weak self] in
                 self?.scheduleNextInAppMessage()
@@ -351,8 +378,30 @@ class InAppManager: NSObject, IterableInternalInAppManagerProtocol {
                         self?.persister.persist(messagesMap.values)
                     }
                 }
+//=======
+//          ITBDebug("Need to wait for: \(waitTimeInterval)")
+//          scheduleQueue.asyncAfter(deadline: .now() + waitTimeInterval) {
+//            self.scheduleNextInAppMessage()
+//          }
+//        } else {
+//          _ = InAppManager.getAppIsActive(applicationStateProvider: applicationStateProvider).map { appIsActive in
+//            if appIsActive {
+//              self.processAndShowMessage(messagesMap: self.messagesMap)
+//              self.persister.persist(self.messagesMap.values)
+//>>>>>>> falcon
+            }
+          }
+        
+      }else{
+        _ = InAppManager.getAppIsReady(applicationStateProvider: applicationStateProvider, displayer: displayer).map { [weak self] appIsActive in
+            if appIsActive {
+                if let messagesMap = self?.messagesMap {
+                    self?.processAndShowMessage(messagesMap: messagesMap)
+                    self?.persister.persist(messagesMap.values)
+                }
             }
         }
+      }
     }
     
     @discardableResult
@@ -461,9 +510,15 @@ class InAppManager: NSObject, IterableInternalInAppManagerProtocol {
         DispatchQueue.main.async { [weak self] in
             IterableActionRunner.execute(action: action,
                                          context: context,
-                                         urlHandler: IterableUtil.urlHandler(fromUrlDelegate: self?.urlDelegate, inContext: context),
+//<<<<<<< HEAD
+//                                         urlHandler: IterableUtil.urlHandler(fromUrlDelegate: self?.urlDelegate, inContext: context),
+//                                         customActionHandler: IterableUtil.customActionHandler(fromCustomActionDelegate: self?.customActionDelegate, inContext: context),
+//                                         urlOpener: self?.urlOpener)
+//=======
+                                         urlHandler: IterableUtil.urlHandler(fromUrlDelegate: self?.urlDelegate, inContext: context,fromNotification: false),
                                          customActionHandler: IterableUtil.customActionHandler(fromCustomActionDelegate: self?.customActionDelegate, inContext: context),
                                          urlOpener: self?.urlOpener)
+//>>>>>>> falcon
         }
     }
     
@@ -476,7 +531,12 @@ class InAppManager: NSObject, IterableInternalInAppManagerProtocol {
     }
     
     private func initializeMessagesMap() {
-        let messages = persister.getMessages()
+        let messages = persister.getMessages().filter({ message in
+          if let d =  message.expiresAt{
+            return d > Date()
+          }
+          return true
+        })
         
         for message in messages {
             messagesMap[message.messageId] = message
@@ -632,6 +692,7 @@ extension InAppManager: InAppNotifiable {
     }
 }
 
+//<<<<<<< HEAD
 extension InAppManager: InAppDisplayChecker {
     func isOkToShowNow(message: IterableInAppMessage) -> Bool {
         guard !isAutoDisplayPaused else {
@@ -656,4 +717,17 @@ extension InAppManager: InAppDisplayChecker {
         
         return true
     }
+}
+//=======
+extension IterableInAppMessage{
+  // 是否直播消息
+  var isYamiLiveMessage:Bool{
+    if let info = customPayload as? [String: Any] {
+       if let k = info["kind"] as? String, k == "live" {
+         return true
+       }
+    }
+    return false
+  }
+//>>>>>>> falcon
 }

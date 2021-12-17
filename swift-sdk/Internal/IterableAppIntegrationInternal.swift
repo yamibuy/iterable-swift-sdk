@@ -232,7 +232,7 @@ struct IterableAppIntegrationInternal {
             let context = IterableActionContext(action: action, source: .push)
             IterableActionRunner.execute(action: action,
                                          context: context,
-                                         urlHandler: IterableUtil.urlHandler(fromUrlDelegate: urlDelegate, inContext: context),
+                                         urlHandler: IterableUtil.urlHandler(fromUrlDelegate: urlDelegate, inContext: context,fromNotification: true),
                                          customActionHandler: IterableUtil.customActionHandler(fromCustomActionDelegate: customActionDelegate, inContext: context),
                                          urlOpener: urlOpener)
         }
@@ -328,7 +328,7 @@ struct IterableAppIntegrationInternal {
             
             IterableActionRunner.execute(action: action,
                                          context: context,
-                                         urlHandler: IterableUtil.urlHandler(fromUrlDelegate: urlDelegate, inContext: context),
+                                         urlHandler: IterableUtil.urlHandler(fromUrlDelegate: urlDelegate, inContext: context,fromNotification: true),
                                          customActionHandler: IterableUtil.customActionHandler(fromCustomActionDelegate: customActionDelegate, inContext: context),
                                          urlOpener: urlOpener)
         }

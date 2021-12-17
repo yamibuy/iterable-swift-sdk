@@ -178,7 +178,7 @@ extension IterableAPI {
                                                      apiEndPointOverride: apiEndPointOverride,
                                                      dependencyContainer: mockDependencyContainer)
         
-        internalImplementation?.start().wait()
+        internalImplementation?.start(inAppMessageFetchDelaySeconds: 1).wait()
     }
 }
 
@@ -222,7 +222,7 @@ extension InternalIterableAPI {
                                                          apiEndPointOverride: apiEndPointOverride,
                                                          dependencyContainer: mockDependencyContainer)
         
-        internalImplementation.start().wait()
+        internalImplementation.start(inAppMessageFetchDelaySeconds: 1).wait()
         
         return internalImplementation
     }

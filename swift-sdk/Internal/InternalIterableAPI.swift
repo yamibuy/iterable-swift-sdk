@@ -67,7 +67,8 @@ final class InternalIterableAPI: NSObject, PushTrackerProtocol, AuthProvider {
                                                     requestHandler: self.requestHandler,
                                                     deviceMetadata: deviceMetadata)
     }()
-    
+  var inAppWebviewUIDelegate:IterableInAppWebViewDelegate?
+
     lazy var authManager: IterableAuthManagerProtocol = {
         self.dependencyContainer.createAuthManager(config: self.config)
     }()
@@ -531,7 +532,7 @@ final class InternalIterableAPI: NSObject, PushTrackerProtocol, AuthProvider {
         deepLinkManager = IterableDeepLinkManager()
     }
     
-    func start() -> Future<Bool, Error> {
+    func start(inAppMessageFetchDelaySeconds:Int) -> Future<Bool, Error> {
         ITBInfo()
         
         updateSDKVersion()
@@ -559,8 +560,12 @@ final class InternalIterableAPI: NSObject, PushTrackerProtocol, AuthProvider {
         requestHandler.start()
         
         checkRemoteConfiguration()
-        
-        return inAppManager.start()
+      let dispatchAfter = DispatchTimeInterval.seconds(inAppMessageFetchDelaySeconds)
+              DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + dispatchAfter) {[weak self]in
+                _ = self?.inAppManager.start()
+              }
+      return Promise<Bool, Error>(value: true)
+
     }
     
     private func handle(launchOptions: [UIApplication.LaunchOptionsKey: Any]?) {
@@ -606,7 +611,7 @@ final class InternalIterableAPI: NSObject, PushTrackerProtocol, AuthProvider {
         DispatchQueue.main.async {
             IterableActionRunner.execute(action: action,
                                          context: context,
-                                         urlHandler: IterableUtil.urlHandler(fromUrlDelegate: self.config.urlDelegate, inContext: context),
+                                         urlHandler: IterableUtil.urlHandler(fromUrlDelegate: self.config.urlDelegate, inContext: context,fromNotification: false),
                                          urlOpener: self.urlOpener)
         }
     }

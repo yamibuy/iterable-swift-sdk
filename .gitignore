@@ -2,7 +2,7 @@
 xcuserdata
 
 .swiftpm/
-
+.build
 *~
 Podfile.lock
 Pods/

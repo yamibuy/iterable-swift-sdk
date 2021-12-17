@@ -6,14 +6,25 @@ import Foundation
 
 /// Custom URL handling delegate
 @objc public protocol IterableURLDelegate: AnyObject {
+//<<<<<<< HEAD
     /// Callback called for a deep link action. Return true to override default behavior
     /// - Parameters:
     ///     - url: The deep link URL
     ///     - context: Metadata containing the original action and the source: push or universal link.
     ///
     /// - Returns: `true` if the URL was handled to override default behavior.
-    @objc(handleIterableURL:context:)
-    func handle(iterableURL url: URL, inContext context: IterableActionContext) -> Bool
+//    @objc(handleIterableURL:context:)
+//    func handle(iterableURL url: URL, inContext context: IterableActionContext) -> Bool
+//=======
+//    /**
+//     * Callback called for a deep link action. Return true to override default behavior
+//     * - parameter url:     Deep link URL
+//     * - parameter context:  Metadata containing the original action and the source: push or universal link.
+//     * - returns: Boolean value. Return true if the URL was handled to override default behavior.
+//     */
+     @objc(handleIterableURL:context:fromNotification:)
+     func handle(iterableURL url: URL, inContext context: IterableActionContext,fromNotification:Bool) -> Bool
+//>>>>>>> falcon
 }
 
 /// Custom action handling delegate
@@ -29,6 +40,7 @@ import Foundation
     func handle(iterableCustomAction action: IterableAction, inContext context: IterableActionContext) -> Bool
 }
 
+//<<<<<<< HEAD
 /// This protocol allows you to override default behavior when new in-app messages arrive.
 @objc public protocol IterableInAppDelegate: AnyObject {
     /// This method is called when new in-app message is available.
@@ -41,6 +53,48 @@ import Foundation
     @objc(onNewMessage:)
     func onNew(message: IterableInAppMessage) -> InAppShowResponse
 }
+//=======
+public enum InAppWebViewEvent{
+  case displayed(IterableInAppMessage)
+  case linkTappedAndFinishShow(String,IterableInAppMessage)
+}
+
+
+/**
+ * in-App webview ui delegate
+ */
+public protocol IterableInAppWebViewDelegate: AnyObject {
+   
+   func eventCallBack(event :InAppWebViewEvent)
+}
+//
+///**
+// * This protocol allows you to override default behavior when new in-app messages arrive.
+// */
+//@objc public protocol IterableInAppDelegate: AnyObject {
+//    /**
+//     * This method is called when new in-app message is available.
+//     * The default behavior is to `show` if you don't override this method.
+//     * - parameter message: `IterableInAppMessage` object containing information regarding in-app to display
+//     * - returns: Return `show` to show the in-app or `skip` to skip this.
+//     */
+//    @objc(onNewMessage:) func onNew(message: IterableInAppMessage) -> InAppShowResponse
+//
+//    /// 此刻消息是否可以展示
+////    func messageCanShowNow() ->Bool
+//
+//
+//}
+//
+///**
+// * Lowest level that will be logged. By default the LogLevel is set to LogLevel.info.
+// */
+//@objc(IterableLogLevel) public enum LogLevel: Int {
+//    case debug = 1
+//    case info
+//    case error
+//>>>>>>> falcon
+//}
 
 /// The protocol for adjusting logging
 @objc public protocol IterableLogDelegate: AnyObject {
@@ -110,7 +164,9 @@ public class IterableConfig: NSObject {
     public var inAppDelegate: IterableInAppDelegate = DefaultInAppDelegate()
     
     /// How many seconds to wait before showing the next in-app, if there are more than one present
-    public var inAppDisplayInterval: Double = 30.0
+//    public var inAppDisplayInterval: Double = 30.0
+    public var inAppDisplayInterval: Double = 5.0
+
     
     /// the number of seconds before expiration of the current auth token to get a new auth token
     /// will only apply if token-based authentication is enabled, and the current auth token has
