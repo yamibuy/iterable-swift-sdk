@@ -159,12 +159,21 @@ public final class IterableAPI: NSObject {
     @objc(handleUniversalLink:)
     @discardableResult
     public static func handle(universalLink url: URL) -> Bool {
-        if let internalImplementation = internalImplementation {
-            return internalImplementation.handleUniversalLink(url)
-        } else {
-            InternalIterableAPI.pendingUniversalLink = url
-            return false
-        }
+      if let internalImplementation = internalImplementation {
+        return internalImplementation.handleUniversalLink(url)
+      } else {
+        InternalIterableAPI.pendingUniversalLink = url
+        return false
+      }
+    }
+  
+    /// 解析url并返回 方法实现大部分同 func handle(universalLink url: URL)
+    @discardableResult
+    public static func handle1(link url: URL,urlResolvedCallBack:@escaping (_ resolvedUrl:String)->()) -> Bool{
+      if let internalImplementation = internalImplementation {
+        return internalImplementation.getAndTrack(url, urlResolvedCallBack: urlResolvedCallBack)
+      }
+      return false
     }
     
     /// Add an entry in the device attributes

@@ -76,15 +76,26 @@ final class InternalIterableAPI: NSObject, PushTrackerProtocol, AuthProvider {
     // MARK: - SDK Functions
     
     @discardableResult func handleUniversalLink(_ url: URL) -> Bool {
-        let (result, future) = deepLinkManager.handleUniversalLink(url, urlDelegate: config.urlDelegate, urlOpener: AppUrlOpener())
-        future.onSuccess { attributionInfo in
-            if let attributionInfo = attributionInfo {
-                self.attributionInfo = attributionInfo
-            }
+      let (result, future) = deepLinkManager.handleUniversalLink(url, urlDelegate: config.urlDelegate, urlOpener: AppUrlOpener())
+      future.onSuccess { attributionInfo in
+        if let attributionInfo = attributionInfo {
+          self.attributionInfo = attributionInfo
         }
-        return result
+      }
+      return result
     }
     
+  
+    @discardableResult func getAndTrack(_ url: URL,urlResolvedCallBack:@escaping (_ resolvedUrl:String)->()) -> Bool {
+      let (result, future) = deepLinkManager.getAndTrack(url,urlResolvedCallBack:urlResolvedCallBack, urlDelegate: config.urlDelegate, urlOpener: AppUrlOpener())
+          future.onSuccess { attributionInfo in
+              if let attributionInfo = attributionInfo {
+                  self.attributionInfo = attributionInfo
+              }
+          }
+          return result
+      }
+  
     func setDeviceAttribute(name: String, value: String) {
         deviceAttributes[name] = value
     }
@@ -596,7 +607,7 @@ final class InternalIterableAPI: NSObject, PushTrackerProtocol, AuthProvider {
     
     private func handlePendingUniversalLink() {
         if let pendingUniversalLink = Self.pendingUniversalLink {
-            handleUniversalLink(pendingUniversalLink)
+          handleUniversalLink(pendingUniversalLink)
             Self.pendingUniversalLink = nil
         }
     }

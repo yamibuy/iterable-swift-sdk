@@ -18,7 +18,6 @@ class IterableDeepLinkManager: NSObject {
                 } else {
                     resolvedUrlString = url.absoluteString
                 }
-                
                 if let action = IterableAction.actionOpenUrl(fromUrlString: resolvedUrlString) {
                     let context = IterableActionContext(action: action, source: .universalLink)
                     
@@ -62,6 +61,34 @@ class IterableDeepLinkManager: NSObject {
         }
     }
     
+  
+  func getAndTrack(_ url: URL,urlResolvedCallBack:@escaping (_ resolvedUrl:String)->(), urlDelegate: IterableURLDelegate?, urlOpener: UrlOpenerProtocol) -> (Bool, Future<IterableAttributionInfo?, Error>) {
+      if isIterableDeepLink(url.absoluteString) {
+          let future = resolve(appLinkURL: url).map { (resolvedUrl, attributionInfo) -> IterableAttributionInfo? in
+              var resolvedUrlString: String
+              if let resolvedUrl = resolvedUrl {
+                  resolvedUrlString = resolvedUrl.absoluteString
+              } else {
+                  resolvedUrlString = url.absoluteString
+              }
+              // 用resolvedUrlString（6.2.2版本使用的是 self.deepLinkLocation）
+              urlResolvedCallBack(resolvedUrlString)
+              return attributionInfo
+          }
+          
+          // Always return true for deep link
+          return (true, future)
+      } else {
+        urlResolvedCallBack(url.absoluteString)
+        if let _ = IterableAction.actionOpenUrl(fromUrlString: url.absoluteString) {
+          return (true, Promise<IterableAttributionInfo?, Error>(value: nil))
+        } else {
+          return (false, Promise<IterableAttributionInfo?, Error>(value: nil))
+        }
+      }
+  }
+  
+  
     /// And we will resolve with redirected URL from our server and we will also try to get attribution info.
     /// Otherwise, we will just resolve with the original URL.
     private func resolve(appLinkURL: URL) -> Future<(URL?, IterableAttributionInfo?), Error> {

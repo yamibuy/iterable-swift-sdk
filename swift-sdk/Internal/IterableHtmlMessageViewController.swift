@@ -92,11 +92,10 @@ class IterableHtmlMessageViewController: UIViewController {
         view.backgroundColor = InAppCalculations.initialViewBackgroundColor(isModal: parameters.isModal)
         
 //<<<<<<< HEAD
-        webView.set(position: ViewPosition(width: view.frame.width, height: view.frame.height, center: view.center))
+//        webView.set(position: ViewPosition(width: view.frame.width, height: view.frame.height, center: view.center))
 //=======
-       /// 若在全屏的webview上展示 在iphont X上上下会有留白 在8 Plus这样的正常屏幕上状态栏会有留白 故修改frame
-//        let webView = WKWebView(frame: CGRect(x: 0, y: -DeviceTool.statusBarHeight, width: view.bounds.width, height: view.bounds.height + DeviceTool.statusBarHeight + DeviceTool.bottom ))
-      
+      /// 若在全屏的webview上展示 在iphont X上上下会有留白 在8 Plus这样的正常屏幕上状态栏会有留白 故修改frame
+       (webView as? WKWebView)?.frame = CGRect(x: 0, y: -DeviceTool.statusBarHeight, width: view.bounds.width, height: view.bounds.height + DeviceTool.statusBarHeight + DeviceTool.bottom )
 
 //>>>>>>> falcon
         webView.loadHTMLString(parameters.html, baseURL: URL(string: ""))
@@ -212,6 +211,13 @@ class IterableHtmlMessageViewController: UIViewController {
     
     /// Resizes the webview based upon the insetPadding, height etc
     private func resizeWebView(animate: Bool) {
+      
+      guard location != .full else {
+        /// 若在全屏的webview上展示 在iphont X上上下会有留白 在8 Plus这样的正常屏幕上状态栏会有留白 故修改frame
+        (webView as? WKWebView)?.frame =  CGRect(x: 0, y: -DeviceTool.statusBarHeight, width: view.frame.width, height: view.frame.height + DeviceTool.statusBarHeight + DeviceTool.bottom )
+        return
+      }
+      
         let parentPosition = ViewPosition(width: view.bounds.width,
                                           height: view.bounds.height,
                                           center: view.center)
@@ -316,7 +322,7 @@ extension IterableHtmlMessageViewController: WKNavigationDelegate {
             IterableAPI.internalImplementation?.inAppWebviewUIDelegate?.eventCallBack(event: .displayed(message))
         }
     }
-    
+    /*
     fileprivate func trackInAppClick(destinationUrl: String) {
         if let messageMetadata = parameters.messageMetadata {
             IterableAPI.internalImplementation?.trackInAppClick(messageMetadata.message,
@@ -326,7 +332,7 @@ extension IterableHtmlMessageViewController: WKNavigationDelegate {
         }
 //>>>>>>> falcon
     }
-    
+    */
     func webView(_: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         guard navigationAction.navigationType == .linkActivated, let url = navigationAction.request.url else {
             decisionHandler(.allow)
@@ -394,11 +400,7 @@ extension IterableHtmlMessageViewController: WKNavigationDelegate {
                                          inboxSessionId: params.inboxSessionId,
                                          clickedUrl: destinationURL)
           let message = messageMetadata.message
-            IterableAPI.internalImplementation?.inAppWebviewUIDelegate?.eventCallBack(event: .linkTappedAndFinishShow(destinationURL, message))
-//          }
-          
-          
-          
+          IterableAPI.internalImplementation?.inAppWebviewUIDelegate?.eventCallBack(event: .linkTappedAndFinishShow(destinationURL, message))
         }
     }
 
