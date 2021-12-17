@@ -23,12 +23,7 @@ class IterableDeepLinkManager: NSObject {
                     
                     IterableActionRunner.execute(action: action,
                                                  context: context,
-//<<<<<<< HEAD
-//                                                 urlHandler: IterableUtil.urlHandler(fromUrlDelegate: urlDelegate,
-//                                                                                     inContext: context),
-//=======
                                                  urlHandler: IterableUtil.urlHandler(fromUrlDelegate: urlDelegate, inContext: context,fromNotification: false),
-//>>>>>>> falcon
                                                  urlOpener: urlOpener)
                 }
                 
@@ -40,21 +35,13 @@ class IterableDeepLinkManager: NSObject {
         } else {
             if let action = IterableAction.actionOpenUrl(fromUrlString: url.absoluteString) {
                 let context = IterableActionContext(action: action, source: .universalLink)
-//<<<<<<< HEAD
-                
                 let result = IterableActionRunner.execute(action: action,
                                                           context: context,
                                                           urlHandler: IterableUtil.urlHandler(fromUrlDelegate: urlDelegate,
-                                                                                              inContext: context,fromNotification: false),
+                                                                                      inContext: context,fromNotification: false),
                                                           urlOpener: urlOpener)
                 
                 return (result, Promise<IterableAttributionInfo?, Error>(value: nil))
-//=======
-//                return IterableActionRunner.execute(action: action,
-//                                                    context: context,
-//                                                    urlHandler: IterableUtil.urlHandler(fromUrlDelegate: urlDelegate, inContext: context,fromNotification: false),
-//                                                    urlOpener: urlOpener)
-//>>>>>>> falcon
             } else {
                 return (false, Promise<IterableAttributionInfo?, Error>(value: nil))
             }
@@ -62,22 +49,22 @@ class IterableDeepLinkManager: NSObject {
     }
     
   
-  func getAndTrack(_ url: URL,urlResolvedCallBack:@escaping (_ resolvedUrl:String)->(), urlDelegate: IterableURLDelegate?, urlOpener: UrlOpenerProtocol) -> (Bool, Future<IterableAttributionInfo?, Error>) {
+    func getAndTrack(_ url: URL,urlResolvedCallBack:@escaping (_ resolvedUrl:String)->(), urlDelegate: IterableURLDelegate?, urlOpener: UrlOpenerProtocol) -> (Bool, Future<IterableAttributionInfo?, Error>) {
       if isIterableDeepLink(url.absoluteString) {
-          let future = resolve(appLinkURL: url).map { (resolvedUrl, attributionInfo) -> IterableAttributionInfo? in
-              var resolvedUrlString: String
-              if let resolvedUrl = resolvedUrl {
-                  resolvedUrlString = resolvedUrl.absoluteString
-              } else {
-                  resolvedUrlString = url.absoluteString
-              }
-              // 用resolvedUrlString（6.2.2版本使用的是 self.deepLinkLocation）
-              urlResolvedCallBack(resolvedUrlString)
-              return attributionInfo
+        let future = resolve(appLinkURL: url).map { (resolvedUrl, attributionInfo) -> IterableAttributionInfo? in
+          var resolvedUrlString: String
+          if let resolvedUrl = resolvedUrl {
+            resolvedUrlString = resolvedUrl.absoluteString
+          } else {
+            resolvedUrlString = url.absoluteString
           }
-          
-          // Always return true for deep link
-          return (true, future)
+          // 用resolvedUrlString（6.2.2版本使用的是 self.deepLinkLocation）
+          urlResolvedCallBack(resolvedUrlString)
+          return attributionInfo
+        }
+        
+        // Always return true for deep link
+        return (true, future)
       } else {
         urlResolvedCallBack(url.absoluteString)
         if let _ = IterableAction.actionOpenUrl(fromUrlString: url.absoluteString) {
@@ -86,9 +73,8 @@ class IterableDeepLinkManager: NSObject {
           return (false, Promise<IterableAttributionInfo?, Error>(value: nil))
         }
       }
-  }
-  
-  
+    }
+    
     /// And we will resolve with redirected URL from our server and we will also try to get attribution info.
     /// Otherwise, we will just resolve with the original URL.
     private func resolve(appLinkURL: URL) -> Future<(URL?, IterableAttributionInfo?), Error> {

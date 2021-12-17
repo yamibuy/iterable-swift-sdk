@@ -67,7 +67,8 @@ final class InternalIterableAPI: NSObject, PushTrackerProtocol, AuthProvider {
                                                     requestHandler: self.requestHandler,
                                                     deviceMetadata: deviceMetadata)
     }()
-  var inAppWebviewUIDelegate:IterableInAppWebViewDelegate?
+  
+    var inAppWebviewUIDelegate:IterableInAppWebViewDelegate?
 
     lazy var authManager: IterableAuthManagerProtocol = {
         self.dependencyContainer.createAuthManager(config: self.config)
@@ -88,13 +89,13 @@ final class InternalIterableAPI: NSObject, PushTrackerProtocol, AuthProvider {
   
     @discardableResult func getAndTrack(_ url: URL,urlResolvedCallBack:@escaping (_ resolvedUrl:String)->()) -> Bool {
       let (result, future) = deepLinkManager.getAndTrack(url,urlResolvedCallBack:urlResolvedCallBack, urlDelegate: config.urlDelegate, urlOpener: AppUrlOpener())
-          future.onSuccess { attributionInfo in
-              if let attributionInfo = attributionInfo {
-                  self.attributionInfo = attributionInfo
-              }
-          }
-          return result
+      future.onSuccess { attributionInfo in
+        if let attributionInfo = attributionInfo {
+          self.attributionInfo = attributionInfo
+        }
       }
+      return result
+    }
   
     func setDeviceAttribute(name: String, value: String) {
         deviceAttributes[name] = value
@@ -571,11 +572,11 @@ final class InternalIterableAPI: NSObject, PushTrackerProtocol, AuthProvider {
         requestHandler.start()
         
         checkRemoteConfiguration()
-      let dispatchAfter = DispatchTimeInterval.seconds(inAppMessageFetchDelaySeconds)
-              DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + dispatchAfter) {[weak self]in
-                _ = self?.inAppManager.start()
-              }
-      return Promise<Bool, Error>(value: true)
+        let dispatchAfter = DispatchTimeInterval.seconds(inAppMessageFetchDelaySeconds)
+                DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + dispatchAfter) {[weak self]in
+                  _ = self?.inAppManager.start()
+                }
+        return Promise<Bool, Error>(value: true)
 
     }
     

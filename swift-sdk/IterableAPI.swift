@@ -44,22 +44,15 @@ public final class IterableAPI: NSObject {
     
     // MARK: - Initialization
     
-//<<<<<<< HEAD
     /// An SDK initializer taking in the Iterable Mobile API key to be utilized, and using default SDK settings
     ///
     /// - Parameters:
     ///     - apiKey: The Iterable Mobile API key to be used with the SDK
     ///
     /// - SeeAlso: IterableConfig
-//    @available(iOSApplicationExtension, unavailable)
-//    public static func initialize(apiKey: String) {
-//        initialize(apiKey: apiKey, launchOptions: nil)
-//=======
-//    /// You should call this method and not call the init method directly.
-//    /// - parameter apiKey: Iterable API Key.
+    @available(iOSApplicationExtension, unavailable)
     public static func initialize(apiKey: String,inAppMessageFetchDelaySeconds:Int) {
         initialize(apiKey: apiKey, launchOptions: nil,inAppMessageFetchDelaySeconds:inAppMessageFetchDelaySeconds)
-//>>>>>>> falcon
     }
     
     /// An SDK initializer taking in the Iterable Mobile API key to be utilized, and a config object for the
@@ -102,25 +95,11 @@ public final class IterableAPI: NSObject {
     @available(iOSApplicationExtension, unavailable)
     public static func initialize(apiKey: String,
                                   launchOptions: [UIApplication.LaunchOptionsKey: Any]?,
-//<<<<<<< HEAD
-//                                  config: IterableConfig = IterableConfig()) {
-//        initialize2(apiKey: apiKey,
-//                    launchOptions: launchOptions,
-//                    config: config)
-//=======
                                   config: IterableConfig = IterableConfig(),
                                   inAppMessageFetchDelaySeconds:Int) {
-      
-//        internalImplementation = IterableAPIInternal(apiKey: apiKey, launchOptions: launchOptions, config: config)
-//        _ = internalImplementation?.start(inAppMessageFetchDelaySeconds:inAppMessageFetchDelaySeconds)
-//>>>>>>> falcon
-                                    
-                                    initialize2(apiKey: apiKey,
-                                                launchOptions: launchOptions,
-                                                config: config,inAppMessageFetchDelaySeconds: inAppMessageFetchDelaySeconds)
-                                    
-                                    
-                                    
+      initialize2(apiKey: apiKey,
+                  launchOptions: launchOptions,
+                  config: config,inAppMessageFetchDelaySeconds: inAppMessageFetchDelaySeconds)
     }
 
     /// DO NOT USE THIS.
@@ -685,32 +664,11 @@ public final class IterableAPI: NSObject {
     public static func track(inboxSession: IterableInboxSession) {
         internalImplementation?.track(inboxSession: inboxSession)
     }
-    
-//<<<<<<< HEAD
-//    // MARK: - Private/Internal
-//=======
-//    /// Use this property for getting and showing in-app messages.
-//    /// This property has no meaning if IterableAPI has not been initialized using
-//    /// IterableAPI.initialize
-//    /// ```
-//    /// - IterableAPI.inAppManager.getMessages()
-//    /// - IterableAPI.inAppManager.show(message: message, consume: true)
-//    /// ```
-//    public static var inAppManager: IterableInAppManagerProtocol {
-//        guard let internalImplementation = internalImplementation else {
-//            ITBError("IterableAPI is not initialized yet. In-apps will not work now.")
-//            assertionFailure("IterableAPI is not initialized yet. In-apps will not work now.")
-//            return EmptyInAppManager()
-//        }
-//
-//        return internalImplementation.inAppManager
-//    }
   
     //MARK: InAppWebviewUIDelegate
     static public func setInAppWebviewUIDelegate(_ delegte:IterableInAppWebViewDelegate){
       internalImplementation?.inAppWebviewUIDelegate = delegte
     }
-//>>>>>>> falcon
     
     static var internalImplementation: InternalIterableAPI?
     

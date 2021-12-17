@@ -50,16 +50,9 @@ class InAppFetcher: InAppFetcherProtocol {
     
     private weak var apiClient: ApiClientProtocol?
     
-//<<<<<<< HEAD
-//    private let numMessages = 100
-//=======
     // how many messages to fetch
     private let numMessages = 10
-  
-//    private let numMessages = 1 // only 1 , newest
-
-  
-//>>>>>>> falcon
+   //  private let numMessages = 1 // only 1 , newest
 }
 
 struct InAppMessageContext {

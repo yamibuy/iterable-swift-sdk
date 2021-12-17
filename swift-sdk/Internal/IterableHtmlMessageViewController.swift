@@ -75,12 +75,7 @@ class IterableHtmlMessageViewController: UIViewController {
         return CreateResult(viewController: viewController, futureClickedURL: viewController.futureClickedURL)
     }
     
-//<<<<<<< HEAD
     override var prefersStatusBarHidden: Bool { parameters.isModal }
-//=======
-//    override var prefersStatusBarHidden: Bool { return parameters.isModal }
-//
-//>>>>>>> falcon
     
     override func loadView() {
         ITBInfo()
@@ -91,13 +86,9 @@ class IterableHtmlMessageViewController: UIViewController {
 
         view.backgroundColor = InAppCalculations.initialViewBackgroundColor(isModal: parameters.isModal)
         
-//<<<<<<< HEAD
-//        webView.set(position: ViewPosition(width: view.frame.width, height: view.frame.height, center: view.center))
-//=======
       /// 若在全屏的webview上展示 在iphont X上上下会有留白 在8 Plus这样的正常屏幕上状态栏会有留白 故修改frame
        (webView as? WKWebView)?.frame = CGRect(x: 0, y: -DeviceTool.statusBarHeight, width: view.bounds.width, height: view.bounds.height + DeviceTool.statusBarHeight + DeviceTool.bottom )
 
-//>>>>>>> falcon
         webView.loadHTMLString(parameters.html, baseURL: URL(string: ""))
         webView.set(navigationDelegate: self)
         
@@ -121,17 +112,7 @@ class IterableHtmlMessageViewController: UIViewController {
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-//<<<<<<< HEAD
-    
         resizeWebView(animate: false)
-//=======
-        
-//        guard let webView = self.webView else {
-//            return
-//        }
-//        resizeWebView(webView)
-//
-//>>>>>>> falcon
     }
     
     override open func viewWillDisappear(_ animated: Bool) {
@@ -173,34 +154,11 @@ class IterableHtmlMessageViewController: UIViewController {
     private var linkClicked = false
     private var clickedLink: String?
     
-//<<<<<<< HEAD
     private lazy var webView = webViewProvider()
     private var internalAPI: InternalIterableAPI? {
         internalAPIProvider()
     }
-//=======
-    /**
-     Resizes the webview based upon the insetPadding if the html is finished loading
-     
-     - parameter: aWebView the webview
-     */
-//    private func resizeWebView(_ aWebView: WKWebView) {
-//        guard location != .full else {
-//          /// 若在全屏的webview上展示 在iphont X上上下会有留白 在8 Plus这样的正常屏幕上状态栏会有留白 故修改frame
-//          webView?.frame =  CGRect(x: 0, y: -DeviceTool.statusBarHeight, width: view.frame.width, height: view.frame.height + DeviceTool.statusBarHeight + DeviceTool.bottom )
-//          return
-//        }
-//
-//        aWebView.evaluateJavaScript("document.body.offsetHeight", completionHandler: { height, _ in
-//            guard let floatHeight = height as? CGFloat, floatHeight >= 20 else {
-//                ITBError("unable to get height")
-//                return
-//            }
-//            self.resize(webView: aWebView, withHeight: floatHeight)
-//        })
-//>>>>>>> falcon
-//    }
-    
+
     private static func createWebView() -> WebViewProtocol {
         let webView = WKWebView(frame: .zero)
         webView.scrollView.bounces = false
@@ -211,12 +169,12 @@ class IterableHtmlMessageViewController: UIViewController {
     
     /// Resizes the webview based upon the insetPadding, height etc
     private func resizeWebView(animate: Bool) {
-      
-      guard location != .full else {
-        /// 若在全屏的webview上展示 在iphont X上上下会有留白 在8 Plus这样的正常屏幕上状态栏会有留白 故修改frame
-        (webView as? WKWebView)?.frame =  CGRect(x: 0, y: -DeviceTool.statusBarHeight, width: view.frame.width, height: view.frame.height + DeviceTool.statusBarHeight + DeviceTool.bottom )
-        return
-      }
+        
+        guard location != .full else {
+          /// 若在全屏的webview上展示 在iphont X上上下会有留白 在8 Plus这样的正常屏幕上状态栏会有留白 故修改frame
+          (webView as? WKWebView)?.frame =  CGRect(x: 0, y: -DeviceTool.statusBarHeight, width: view.frame.width, height: view.frame.height + DeviceTool.statusBarHeight + DeviceTool.bottom )
+          return
+        }
       
         let parentPosition = ViewPosition(width: view.bounds.width,
                                           height: view.bounds.height,
@@ -310,29 +268,14 @@ class IterableHtmlMessageViewController: UIViewController {
 
 extension IterableHtmlMessageViewController: WKNavigationDelegate {
     func webView(_: WKWebView, didFinish _: WKNavigation!) {
-//<<<<<<< HEAD
         ITBInfo()
         resizeWebView(animate: true)
         presenter?.webViewDidFinish()
-//=======
-//        if let myWebview = self.webView {
-//            resizeWebView(myWebview)
-//        }
         if let message = self.parameters.messageMetadata?.message{
             IterableAPI.internalImplementation?.inAppWebviewUIDelegate?.eventCallBack(event: .displayed(message))
         }
     }
-    /*
-    fileprivate func trackInAppClick(destinationUrl: String) {
-        if let messageMetadata = parameters.messageMetadata {
-            IterableAPI.internalImplementation?.trackInAppClick(messageMetadata.message,
-                                                                location: messageMetadata.location,
-                                                                inboxSessionId: parameters.inboxSessionId,
-                                                                clickedUrl: destinationUrl)
-        }
-//>>>>>>> falcon
-    }
-    */
+    
     func webView(_: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         guard navigationAction.navigationType == .linkActivated, let url = navigationAction.request.url else {
             decisionHandler(.allow)
@@ -353,7 +296,6 @@ extension IterableHtmlMessageViewController: WKNavigationDelegate {
         
         linkClicked = true
         clickedLink = destinationUrl
-//<<<<<<< HEAD
 
         Self.trackClickOnDismiss(internalAPI: internalAPI,
                                  params: parameters,
@@ -362,28 +304,7 @@ extension IterableHtmlMessageViewController: WKNavigationDelegate {
                                  andDestinationURL: destinationUrl)
 
         animateWhileLeaving(webView.position)
-/*
-=======
-        
-        if parameters.isModal {
-            dismiss(animated: true) { [weak self, destinationUrl] in
-                self?.futureClickedURL.resolve(with: url)
-                self?.trackInAppClick(destinationUrl: destinationUrl)
-                if let message = self?.parameters.messageMetadata?.message{
-                  IterableAPI.internalImplementation?.inAppWebviewUIDelegate?.eventCallBack(event: .linkTappedAndFinishShow(destinationUrl, message))
-                }
-            }
-        } else {
-            futureClickedURL.resolve(with: url)
-            trackInAppClick(destinationUrl: destinationUrl)
-            navigationController?.popViewController(animated: true)
-            if let message = self.parameters.messageMetadata?.message{
-              IterableAPI.internalImplementation?.inAppWebviewUIDelegate?.eventCallBack(event: .linkTappedAndFinishShow(destinationUrl, message))
-            }
-        }
-        
->>>>>>> falcon
- */
+
         decisionHandler(.cancel)
     }
 

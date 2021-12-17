@@ -211,36 +211,23 @@ class InAppManager: NSObject, IterableInternalInAppManagerProtocol {
         }
     }
     
-//<<<<<<< HEAD
+
     private func synchronize(appIsReady: Bool) -> Future<Bool, Error> {
-        ITBInfo()
-        
-        return fetcher.fetch()
-            .map { [weak self] in
-                self?.mergeMessages($0) ?? MergeMessagesResult(inboxChanged: false, messagesMap: [:], deliveredMessages: [])
-            }
-            .map { [weak self] in
-                self?.processMergedMessages(appIsReady: appIsReady, mergeMessagesResult: $0) ?? true
-            }
-//=======
-//    private func synchronize(appIsActive: Bool) -> Future<Bool, Error> {
-//      ITBInfo()
-//
-//
-//      return fetcher.fetch().map{ self.mergeMessages($0)}.map { self.processMergedMessages(appIsActive: appIsReady, mergeMessagesResult: $0) }
-//
-//>>>>>>> falcon
+      ITBInfo()
+      
+      return fetcher.fetch()
+        .map { [weak self] in
+          self?.mergeMessages($0) ?? MergeMessagesResult(inboxChanged: false, messagesMap: [:], deliveredMessages: [])
+        }
+        .map { [weak self] in
+          self?.processMergedMessages(appIsReady: appIsReady, mergeMessagesResult: $0) ?? true
+        }
     }
     
     /// `messages` are new messages coming from the server
     private func mergeMessages(_ messages: [IterableInAppMessage]) -> MergeMessagesResult {
-//<<<<<<< HEAD
-//       return MessagesObtainedHandler(messagesMap: messagesMap, messages: messages).handle()
-//=======
-//
-       var messagesObtainedHandler = MessagesObtainedHandler(messagesMap: messagesMap, messages: messages)
-       return messagesObtainedHandler.handle()
-//>>>>>>> falcon
+      var messagesObtainedHandler = MessagesObtainedHandler(messagesMap: messagesMap, messages: messages)
+      return messagesObtainedHandler.handle()
     }
     
     private func processMergedMessages(appIsReady: Bool, mergeMessagesResult: MergeMessagesResult) -> Bool {
@@ -261,8 +248,6 @@ class InAppManager: NSObject, IterableInternalInAppManagerProtocol {
         
         return true
     }
-  
-    
     
     private func finishSync(inboxChanged: Bool) {
         ITBInfo()
@@ -303,7 +288,6 @@ class InAppManager: NSObject, IterableInternalInAppManagerProtocol {
 //           self?.apiClient?.inAppConsume(messageId: message.messageId)
           self?.requestHandler?.inAppConsume(message.messageId, onSuccess: nil,
                                              onFailure: nil)
-
         }
 
         let messagesProcessorResult = processor.processMessages()
@@ -363,43 +347,29 @@ class InAppManager: NSObject, IterableInternalInAppManagerProtocol {
       ITBDebug()
       if checkTimeInterval{
         let waitTimeInterval = getInAppShowingWaitTimeInterval()
-        
         if waitTimeInterval > 0 {
-//<<<<<<< HEAD
-            ITBDebug("Need to wait for: \(waitTimeInterval)")
-            scheduleQueue.asyncAfter(deadline: .now() + waitTimeInterval) { [weak self] in
-                self?.scheduleNextInAppMessage()
-            }
+          ITBDebug("Need to wait for: \(waitTimeInterval)")
+          scheduleQueue.asyncAfter(deadline: .now() + waitTimeInterval) { [weak self] in
+            self?.scheduleNextInAppMessage()
+          }
         } else {
-            _ = InAppManager.getAppIsReady(applicationStateProvider: applicationStateProvider, displayer: displayer).map { [weak self] appIsActive in
-                if appIsActive {
-                    if let messagesMap = self?.messagesMap {
-                        self?.processAndShowMessage(messagesMap: messagesMap)
-                        self?.persister.persist(messagesMap.values)
-                    }
-                }
-//=======
-//          ITBDebug("Need to wait for: \(waitTimeInterval)")
-//          scheduleQueue.asyncAfter(deadline: .now() + waitTimeInterval) {
-//            self.scheduleNextInAppMessage()
-//          }
-//        } else {
-//          _ = InAppManager.getAppIsActive(applicationStateProvider: applicationStateProvider).map { appIsActive in
-//            if appIsActive {
-//              self.processAndShowMessage(messagesMap: self.messagesMap)
-//              self.persister.persist(self.messagesMap.values)
-//>>>>>>> falcon
+          _ = InAppManager.getAppIsReady(applicationStateProvider: applicationStateProvider, displayer: displayer).map { [weak self] appIsActive in
+            if appIsActive {
+              if let messagesMap = self?.messagesMap {
+                self?.processAndShowMessage(messagesMap: messagesMap)
+                self?.persister.persist(messagesMap.values)
+              }
             }
           }
-        
+        }
       }else{
         _ = InAppManager.getAppIsReady(applicationStateProvider: applicationStateProvider, displayer: displayer).map { [weak self] appIsActive in
-            if appIsActive {
-                if let messagesMap = self?.messagesMap {
-                    self?.processAndShowMessage(messagesMap: messagesMap)
-                    self?.persister.persist(messagesMap.values)
-                }
+          if appIsActive {
+            if let messagesMap = self?.messagesMap {
+              self?.processAndShowMessage(messagesMap: messagesMap)
+              self?.persister.persist(messagesMap.values)
             }
+          }
         }
       }
     }
@@ -510,15 +480,9 @@ class InAppManager: NSObject, IterableInternalInAppManagerProtocol {
         DispatchQueue.main.async { [weak self] in
             IterableActionRunner.execute(action: action,
                                          context: context,
-//<<<<<<< HEAD
-//                                         urlHandler: IterableUtil.urlHandler(fromUrlDelegate: self?.urlDelegate, inContext: context),
-//                                         customActionHandler: IterableUtil.customActionHandler(fromCustomActionDelegate: self?.customActionDelegate, inContext: context),
-//                                         urlOpener: self?.urlOpener)
-//=======
                                          urlHandler: IterableUtil.urlHandler(fromUrlDelegate: self?.urlDelegate, inContext: context,fromNotification: false),
                                          customActionHandler: IterableUtil.customActionHandler(fromCustomActionDelegate: self?.customActionDelegate, inContext: context),
                                          urlOpener: self?.urlOpener)
-//>>>>>>> falcon
         }
     }
     
@@ -692,7 +656,6 @@ extension InAppManager: InAppNotifiable {
     }
 }
 
-//<<<<<<< HEAD
 extension InAppManager: InAppDisplayChecker {
     func isOkToShowNow(message: IterableInAppMessage) -> Bool {
         guard !isAutoDisplayPaused else {
@@ -718,7 +681,7 @@ extension InAppManager: InAppDisplayChecker {
         return true
     }
 }
-//=======
+
 extension IterableInAppMessage{
   // 是否直播消息
   var isYamiLiveMessage:Bool{
@@ -729,5 +692,4 @@ extension IterableInAppMessage{
     }
     return false
   }
-//>>>>>>> falcon
 }
