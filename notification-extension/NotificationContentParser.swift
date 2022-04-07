@@ -44,31 +44,31 @@ struct NotificationContentParser {
         }
         
         if button.buttonType == .textInput {
-//            if #available(iOS 15.0, *) {
-//                return UNTextInputNotificationAction(identifier: button.identifier,
-//                                                     title: button.title,
-//                                                     options: getOptions(forActionButton: button),
-//                                                     icon: getNotificationIcon(forActionButton: button),
-//                                                     textInputButtonTitle: button.textInputTitle ?? "",
-//                                                     textInputPlaceholder: button.textInputPlaceholder ?? "")
-//            } else {
+            if #available(iOS 15.0, *) {
+                return UNTextInputNotificationAction(identifier: button.identifier,
+                                                     title: button.title,
+                                                     options: getOptions(forActionButton: button),
+                                                     icon: getNotificationIcon(forActionButton: button),
+                                                     textInputButtonTitle: button.textInputTitle ?? "",
+                                                     textInputPlaceholder: button.textInputPlaceholder ?? "")
+            } else {
                 return UNTextInputNotificationAction(identifier: button.identifier,
                                                      title: button.title,
                                                      options: getOptions(forActionButton: button),
                                                      textInputButtonTitle: button.textInputTitle ?? "",
                                                      textInputPlaceholder: button.textInputPlaceholder ?? "")
-//            }
+            }
         } else {
-//            if #available(iOS 15.0, *) {
-//                return UNNotificationAction(identifier: button.identifier,
-//                                            title: button.title,
-//                                            options: getOptions(forActionButton: button),
-//                                            icon: getNotificationIcon(forActionButton: button))
-//            } else {
+            if #available(iOS 15.0, *) {
+                return UNNotificationAction(identifier: button.identifier,
+                                            title: button.title,
+                                            options: getOptions(forActionButton: button),
+                                            icon: getNotificationIcon(forActionButton: button))
+            } else {
                 return UNNotificationAction(identifier: button.identifier,
                                             title: button.title,
                                             options: getOptions(forActionButton: button))
-//            }
+            }
         }
     }
 
@@ -117,7 +117,7 @@ struct NotificationContentParser {
         
         return options
     }
-    /*
+    
     @available(iOS 15.0, *)
     private static func getNotificationIcon(forActionButton button: ActionButton) -> UNNotificationActionIcon? {
         guard let actionIcon = button.actionIcon else {
@@ -129,7 +129,7 @@ struct NotificationContentParser {
             return UNNotificationActionIcon(templateImageName: actionIcon.imageName)
         }
     }
-    */
+    
     private enum ButtonType: String {
         case `default`
         case destructive
