@@ -85,13 +85,16 @@ class IterableHtmlMessageViewController: UIViewController {
         location = parameters.location
 
         view.backgroundColor = InAppCalculations.initialViewBackgroundColor(isModal: parameters.isModal)
-        
-      /// 若在全屏的webview上展示 在iphont X上上下会有留白 在8 Plus这样的正常屏幕上状态栏会有留白 故修改frame
-       (webView as? WKWebView)?.frame = CGRect(x: 0, y: -DeviceTool.statusBarHeight, width: view.bounds.width, height: view.bounds.height + DeviceTool.statusBarHeight + DeviceTool.bottom )
-
+        webView.set(position: ViewPosition(width: view.frame.width, height: view.frame.height, center: view.center))
+      
         webView.loadHTMLString(parameters.html, baseURL: URL(string: ""))
         webView.set(navigationDelegate: self)
-        
+        //在全面屏上上下会有留白
+        if #available(iOS 11.0, *) {
+          (webView as? WKWebView)?.scrollView.contentInsetAdjustmentBehavior  = .never
+        } else {
+          // Fallback on earlier versions
+        }
         view.addSubview(webView.view)
     }
     
@@ -169,12 +172,6 @@ class IterableHtmlMessageViewController: UIViewController {
     
     /// Resizes the webview based upon the insetPadding, height etc
     private func resizeWebView(animate: Bool) {
-        
-        guard location != .full else {
-          /// 若在全屏的webview上展示 在iphont X上上下会有留白 在8 Plus这样的正常屏幕上状态栏会有留白 故修改frame
-          (webView as? WKWebView)?.frame =  CGRect(x: 0, y: -DeviceTool.statusBarHeight, width: view.frame.width, height: view.frame.height + DeviceTool.statusBarHeight + DeviceTool.bottom )
-          return
-        }
       
         let parentPosition = ViewPosition(width: view.bounds.width,
                                           height: view.bounds.height,
@@ -328,57 +325,4 @@ extension IterableHtmlMessageViewController: WKNavigationDelegate {
 }
 
 
-struct DeviceTool {
-  static var isEntirelyScreen:Bool{ UIApplication.shared.statusBarFrame.height > 20 ? true : false}
-  static var statusBarHeight = UIApplication.shared.statusBarFrame.height
-  static var bottom:CGFloat =  isEntirelyScreen ? 34 : 0
-}
 
-
-//以下html代码 若在全屏的webview上展示 在iphont X上上下会有留白 在8 Plus这样的正常屏幕上状态栏会有留白 暂时未找到通过修改html代码而解决问题的办法
-// 故未解决此问题 修改webview的frame
-/*
-<html>
-  <head>
-    <meta data-n-head="true" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
-    <title></title>
-    <style type="text/css">body{
-      margin:0;
-      padding:0;
-      }
-      .panel {
-        margin:0;
-        padding:0;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.6);
-      }
-      .fresh {
-        max-width: 60%;
-      }
-      .fresh-action {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
-      .button-close {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-      }
-      .close {
-        margin-top: 50px;
-        max-width: 40%;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="panel"><a class="fresh-action" href="https://m.yamibuy.com/zh/freshlist?track=display-popup&amp;utm_source=iterable&amp;utm_medium=popup&amp;utm_campaign=POP_Fresh&amp;campaign_id=1209249&amp;template_id=1687171"><img alt="" class="fresh" src="https://cdn.yamibuy.net/mkpl/c45af24da8d07ca4d1906b0e09aa13ce_0x0.png" /></a> <a class="button-close" href="action://"> <img alt="" class="close" src="https://d2axdqolvqmdvx.cloudfront.net/5dc76691-5aea-4faf-8fb5-44995ccaa7c5/dialog_button_close3x.png" /> </a> &nbsp;
-    </div>
-  </body>
-</html>
-*/
